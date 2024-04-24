@@ -3,15 +3,15 @@ const mongoose = require('mongoose');
 
 const createSchema = Joi.object().keys({
   name: Joi.string().required(),
+  description: Joi.string().required(),
   price: Joi.number().required(),
-  description: Joi.string().optional(),
   inStock: Joi.boolean().optional(),
 });
 
 const updateSchema = Joi.object().keys({
   name: Joi.string(),
-  price: Joi.number(),
   description: Joi.string(),
+  price: Joi.number(),
   inStock: Joi.boolean(),
 });
 
