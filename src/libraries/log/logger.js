@@ -53,17 +53,16 @@ class LogManager {
 
     if (argv.env === 'production') {
       const config = require('../../configs/config.production.json');
-
-      console.log('LOGGLY_SUBDOMAIN', config.LOGGLY_SUBDOMAIN); // Access the data directly
-
-      this.logger.add(
-        new Loggly({
-          token: config.LOGGLY_TOKEN,
-          subdomain: config.LOGGLY_SUBDOMAIN || 'foyzulk2023',
-          tags: [os.hostname(), argv.env],
-          json: true,
-        })
-      );
+      if (config?.LOGGLY_TOKEN) {
+        this.logger.add(
+          new Loggly({
+            token: config.LOGGLY_TOKEN,
+            subdomain: config.LOGGLY_SUBDOMAIN || 'foyzulk2023',
+            tags: [os.hostname(), argv.env],
+            json: true,
+          })
+        );
+      }
     }
   }
 
