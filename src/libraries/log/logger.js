@@ -1,6 +1,9 @@
+const os = require('os');
 const { retrieveRequestId } = require('../../middlewares/request-context');
 const { createLogger, format, transports } = require('winston');
+const { Loggly } = require('winston-loggly-bulk');
 require('winston-daily-rotate-file');
+const argv = require('minimist')(process.argv);
 
 const LOG_DIR = 'logs';
 class LogManager {
@@ -21,7 +24,7 @@ class LogManager {
             info.requestId = requestId;
           }
           return info;
-        })() 
+        })()
       ),
       transports: [
         new transports.File({
@@ -40,12 +43,26 @@ class LogManager {
       ],
     });
 
-    if (process.env.NODE_ENV !== 'production') {
+    if (argv.env !== 'production') {
       this.logger.add(
         new transports.Console({
           format: format.combine(format.colorize(), format.simple()),
         })
       );
+    }
+
+    if (argv.env === 'production') {
+      const config = require('../../configs/config.production.json');
+      if (config?.LOGGLY_TOKEN) {
+        this.logger.add(
+          new Loggly({
+            token: config.LOGGLY_TOKEN,
+            subdomain: config.LOGGLY_SUBDOMAIN || 'foyzulk2023',
+            tags: [os.hostname(), argv.env],
+            json: true,
+          })
+        );
+      }
     }
   }
 

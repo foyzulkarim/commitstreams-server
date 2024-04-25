@@ -123,6 +123,7 @@ dist
 .pnp.*
 
 # ignore .env and config.{}.json files
+.env
 .env.development
 .env.production
 .env.test
