@@ -34,8 +34,11 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             cd /var/www/commitstreams-server 
+            curl https://get.volta.sh | bash
+            volta install node@20
+            source ~/.bashrc
             git pull origin main
-            npm install 
+            npm install
             npm run stop:prod
             npm run start:prod
 
