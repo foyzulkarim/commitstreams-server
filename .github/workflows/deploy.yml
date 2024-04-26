@@ -22,7 +22,11 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Run API tests
+        run: npm test
+
       - name: Deploy API
+        if: success()
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SERVER_IP }}
