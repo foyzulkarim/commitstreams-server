@@ -27,12 +27,20 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            cd /var/www/commitstreams-server 
-            curl https://get.volta.sh | bash
+            cd /var/www/commitstreams-server
+            # installs NVM (Node Version Manager)
+            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+            # download and install Node.js
+            nvm install 20
+            
+            # verifies the right Node.js version is in the environment
+            node -v # should print `v20.12.2`
+            
+            # verifies the right NPM version is in the environment
+            npm -v # should print `10.5.0`
             source ~/.bashrc
-            volta install node@20
             git pull origin main
             npm install
-            npm run stop:prod
-            npm run start:prod
+            # npm run stop:prod
+            # npm run start:prod
 
