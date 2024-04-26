@@ -40,6 +40,6 @@ jobs:
             source ~/.bashrc
             git pull origin main
             npm install
-            # npm run stop:prod
-            # npm run start:prod
+            npm run stop:prod
+            npm run start:prod
 
