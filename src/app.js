@@ -11,7 +11,12 @@ function defineRoutes(expressApp) {
   expressApp.use('/api/v1', router);
   // health check
   expressApp.get('/health', (req, res) => {
-    res.status(200).send('OK');
+    const healthCheck = {
+      uptime: process.uptime(),
+      message: 'OK',
+      timestamp: Date.now(),
+    };
+    res.status(200).json(healthCheck);
   });
   // 404 handler
   expressApp.use((req, res) => {
