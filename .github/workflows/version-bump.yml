@@ -20,7 +20,7 @@ jobs:
       - run: npm install
       - run: npm version patch -m "Automatic version bump on merge to main"
       - run: git push
-      - run: git push https://github-actions[bot]:${{ secrets.REPO_ACCESS_TOKEN }}@github.com/foyzulkarim/commitstreams-server.git 
+      - run: git push https://github-actions[bot]:${{ secrets.GIT_ACCESS_TOKEN }}@github.com/foyzulkarim/commitstreams-server.git 
       - name: Trigger deployment workflow
         uses: benc-uk/workflow-dispatch@v1.1 # Example action, choose one you prefer
         with:
