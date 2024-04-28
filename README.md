@@ -1,5 +1,7 @@
 ## **Node.js Express Boilerplate: Best Practices for Project Structure**
 
+[![Ubuntu server deploy](https://github.com/foyzulkarim/commitstreams-server/actions/workflows/deploy.yml/badge.svg)](https://github.com/foyzulkarim/commitstreams-server/actions/workflows/deploy.yml)
+
 **Purpose**
 
 This boilerplate repository offers a well-structured and scalable foundation for Node.js Express projects, emphasizing industry best practices in folder architecture and file organization.  While it does not provide a functional implementation, it serves as a valuable starting point for building robust and maintainable applications.
