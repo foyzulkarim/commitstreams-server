@@ -20,6 +20,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install
+      - run: npm version patch -m "Automatic version bump on merge to main"
       - name: Deploy
         uses: appleboy/ssh-action@master
         with:
@@ -30,16 +36,15 @@ jobs:
             cd /var/www/commitstreams-server
             export NVM_DIR=~/.nvm
             source ~/.nvm/nvm.sh
-            
+
             # verifies the right Node.js version is in the environment
             node -v # should print `v20.12.2`
-            
+
             # verifies the right NPM version is in the environment
             npm -v # should print `10.5.0`
-            
+
             source ~/.bashrc
             git pull origin main
             npm install
             npm run stop:prod
             npm run start:prod
-

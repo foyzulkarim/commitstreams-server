@@ -1,6 +1,7 @@
 const express = require('express');
 const logger = require('./libraries/log/logger');
 const domainRoutes = require('./domains/index');
+const packageJson = require('../package.json');
 
 function defineRoutes(expressApp) {
   logger.info('Defining routes...');
@@ -15,6 +16,7 @@ function defineRoutes(expressApp) {
       uptime: process.uptime(),
       message: 'OK',
       timestamp: Date.now(),
+      version: packageJson.version,
     };
     res.status(200).json(healthCheck);
   });
