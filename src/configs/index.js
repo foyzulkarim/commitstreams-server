@@ -1,28 +1,35 @@
-const dotenv = require("dotenv");
-const fs = require("fs");
-const path = require("path");
+const dotenv = require('dotenv');
+const fs = require('fs');
+const path = require('path');
 
-const logger = require("../libraries/log/logger");
-const schema = require("./config.schema");
+const logger = require('../libraries/log/logger');
+const schema = require('./config.schema');
 
 class Config {
   constructor() {
     if (!Config.instance) {
-      logger.info("Loading and validating config for the first time...");
+      logger.info('Loading and validating config for the first time...');
       this.config = this.loadAndValidateConfig();
       Config.instance = this;
-      logger.info("Config loaded and validated");
+      logger.info('Config loaded and validated', {
+        NODE_ENV: this.config.NODE_ENV,
+        PORT: this.config.PORT,
+        HOST: this.config.HOST,
+        CLIENT_HOST: this.config.CLIENT_HOST,
+      });
+      // log the keys only (not the values) from the config
+      logger.info('Config keys: ', Object.keys(this.config));
     }
 
     return Config.instance;
   }
 
   loadAndValidateConfig() {
-    const environment = process.env.NODE_ENV || "development";
+    const environment = process.env.NODE_ENV || 'development';
 
     // 1. Load environment file from one level up and using __dirname
     const envFile = `.env.${environment}`;
-    const envPath = path.join(__dirname, "..", envFile);
+    const envPath = path.join(__dirname, '..', envFile);
     if (!fs.existsSync(envPath)) {
       throw new Error(`Environment file not found: ${envPath}`);
     }
@@ -39,7 +46,7 @@ class Config {
 
     let config = JSON.parse(fs.readFileSync(configFile));
 
-    const sharedConfigFile = path.join(__dirname, "config.shared.json");
+    const sharedConfigFile = path.join(__dirname, 'config.shared.json');
     if (fs.existsSync(sharedConfigFile)) {
       const sharedConfig = JSON.parse(fs.readFileSync(sharedConfigFile));
       config = { ...sharedConfig, ...config };
@@ -63,7 +70,7 @@ class Config {
     if (error) {
       const missingProperties = error.details.map((detail) => detail.path[0]);
       throw new Error(
-        `Config validation error: missing properties ${missingProperties}`,
+        `Config validation error: missing properties ${missingProperties}`
       );
     }
     return validatedConfig;
