@@ -37,7 +37,7 @@ const createExpressApp = () => {
       {
         clientID: config.GITHUB_CLIENT_ID,
         clientSecret: config.GITHUB_CLIENT_SECRET,
-        callbackURL: `${config.HOST}/auth/github/callback`,
+        callbackURL: `${config.HOST}/api/auth/github/callback`,
       },
       function (accessToken, refreshToken, profile, cb) {
         const pickedProfile = pick(profile, [
@@ -84,14 +84,14 @@ const createExpressApp = () => {
 
   logger.info('Express middlewares are set up');
 
-  expressApp.get('/auth/github', passport.authenticate('github'));
+  expressApp.get('/api/auth/github', passport.authenticate('github'));
   expressApp.get(
-    '/auth/github/callback',
+    '/api/auth/github/callback',
     passport.authenticate('github', {
       failureRedirect: `${config.CLIENT_HOST}/login`,
     }),
     function (req, res) {
-      logger.info('/auth/github/callback', { username: req.user.username });
+      logger.info('/api/auth/github/callback', { username: req.user.username });
       // prepare the cookie here
       const accessToken = req.user.accessToken; // Assuming this exists
 
