@@ -24,6 +24,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+      # configure git user
+      - name: Configure Git User
+        run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "github-actions-bot@users.noreply.github.com"
       - run: npm install
       - run: npm version patch -m "Automatic version bump on merge to main"
       - name: Deploy
