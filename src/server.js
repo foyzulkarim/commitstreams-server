@@ -3,6 +3,8 @@ const express = require('express');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
+const pick = require('lodash/pick');
+const get = require('lodash/get');
 
 const passport = require('passport');
 const GitHubStrategy = require('passport-github2').Strategy;
@@ -38,7 +40,15 @@ const createExpressApp = () => {
         callbackURL: `${config.HOST}/auth/github/callback`,
       },
       function (accessToken, refreshToken, profile, cb) {
-        logger.info('accessToken', { accessToken, refreshToken, profile });
+        const pickedProfile = pick(profile, [
+          'id',
+          'nodeId',
+          'profileUrl',
+          'provider',
+          'username',
+        ]);
+        const email = get(profile, 'emails[0].value', '');
+        logger.info('GitHub profile:', { ...pickedProfile, email });
         // Find or create a user in your database here
         // For now, we'll just return the profile
         profile.accessToken = accessToken;
@@ -81,7 +91,7 @@ const createExpressApp = () => {
       failureRedirect: `${config.CLIENT_HOST}/login`,
     }),
     function (req, res) {
-      logger.info('/auth/github/callback', { user: req.user });
+      logger.info('/auth/github/callback', { username: req.user.username });
       // prepare the cookie here
       const accessToken = req.user.accessToken; // Assuming this exists
 
@@ -130,7 +140,7 @@ const createExpressApp = () => {
       if (err) {
         return next(err);
       }
-      
+
       req.session.destroy(function (err) {
         // Handle potential errors during session destruction
         res.json('Logged out successfully');
