@@ -23,6 +23,7 @@
   "license": "ISC",
   "dependencies": {
     "compression": "^1.7.4",
+    "connect-mongo": "^5.1.0",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "cron": "^3.1.6",
@@ -49,5 +50,8 @@
     "mongodb-memory-server": "^9.1.8",
     "supertest": "^6.3.4",
     "zx": "^8.0.1"
+  },
+  "volta": {
+    "node": "20.12.2"
   }
 }
