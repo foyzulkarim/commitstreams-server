@@ -22,12 +22,15 @@ function encryptToken(token, encryptionKey) {
 }
 
 function decryptRefreshToken(encryptedToken, iv, encryptionKey) {
-  const decipher = crypto.createDecipheriv('aes-256-cbc', encryptionKey, Buffer.from(iv, 'hex'));
+  const decipher = crypto.createDecipheriv(
+    'aes-256-cbc',
+    encryptionKey,
+    Buffer.from(iv, 'hex')
+  );
   let decrypted = decipher.update(encryptedToken, 'hex', 'utf-8');
-  decrypted += decipher.final('utf-8'); 
+  decrypted += decipher.final('utf-8');
   return decrypted;
 }
-
 
 const getGitHubStrategy = () => {
   return new GitHubStrategy(
@@ -46,6 +49,7 @@ const getGitHubStrategy = () => {
           username: profile.username,
           profileUrl: profile.profileUrl,
 
+          avatarUrl: profile._json.avatar_url,
           apiUrl: profile._json.url,
           company: profile._json.company,
           blog: profile._json.blog,
@@ -63,20 +67,27 @@ const getGitHubStrategy = () => {
         console.log('DB payload:', { payload });
 
         let user = await getByGitHubId(profile.id);
+        const tokenInfo = encryptToken(accessToken, config.ENCRYPTION_KEY);
         if (user) {
           console.log('User already exists', user);
           // Update the user with the latest data
-          user = Object.assign(user, payload);
-          user.updatedAt = new Date();
+          user = Object.assign(user, payload, {
+            accessToken: tokenInfo.token,
+            accessTokenIV: tokenInfo.iv,
+            updatedAt: new Date(),
+          });
           await updateById(user._id, user);
         } else {
-          console.log('Creating new user');
           // Create a new user
-          const tokenInfo = encryptToken(accessToken, config.ENCRYPTION_KEY);
-          user = await create({ ...payload, accessToken: tokenInfo.token, accessTokenIV: tokenInfo.iv});
+          user = await create({
+            ...payload,
+            accessToken: tokenInfo.token,
+            accessTokenIV: tokenInfo.iv,
+          });
         }
-
-        cb(null, user); // Pass the user object to the session
+        const userObj = user.toObject();
+        const { accessTokenIV, ...others } = userObj;
+        cb(null, others); // Pass the user object to the session
       } catch (error) {
         cb(error, null);
       }
@@ -86,7 +97,11 @@ const getGitHubStrategy = () => {
 
 // clear the accessToken value from database after logout
 const clearAuthInfo = async (userId) => {
-  return await updateById(userId, { accessToken: null, updatedAt: new Date() });
+  return await updateById(userId, {
+    accessToken: null,
+    accessTokenIV: null,
+    updatedAt: new Date(),
+  });
 };
 
 module.exports = {

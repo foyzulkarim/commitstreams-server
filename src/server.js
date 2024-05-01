@@ -70,9 +70,9 @@ const createExpressApp = () => {
     function (req, res) {
       logger.info('/api/auth/github/callback', { username: req.user.username });
       // prepare the cookie here
-      const accessToken = req.user.accessToken; // Assuming this exists
+      const userId = req.user._id.toString();
 
-      res.cookie('authToken', accessToken, {
+      res.cookie('userId', userId, {
         httpOnly: true,
         secure: true, // Use secure in production (HTTPS)
         sameSite: 'lax', // Adjust depending on deployment
@@ -86,36 +86,15 @@ const createExpressApp = () => {
     if (!req.user) {
       return res.status(401).send('Unauthorized');
     }
-
-    res.json(req.user);
+    const { accessToken, accessTokenIV, ...user } = req.user;
+    res.json(user);
   });
-  expressApp.get('/api/github-data', (req, res) => {
-    if (!req.user) {
-      return res.status(401).send('Unauthorized');
-    }
-
-    const accessToken = req.user.accessToken;
-
-    axios
-      .get('https://api.github.com/user', {
-        headers: {
-          Authorization: `token ${accessToken}`,
-        },
-      })
-      .then((response) => {
-        res.json(response.data);
-      })
-      .catch((error) => {
-        console.error('Error fetching GitHub data:', error);
-        res.status(500).json({ error: 'Error fetching data' });
-      });
-  });
-  expressApp.get('/api/logout', (req, res, next) => {
+  expressApp.get('/api/logout', async (req, res, next) => {
     const username = req.user?.username;
     const userId = req.user?._id;
     console.log('Logging out user:', { user: req.user });
 
-    req.logout(function (err) {
+    req.logout(async function (err) {
       // Passport.js logout function
       if (err) {
         logger.error('Failed to log out user', err);
@@ -131,14 +110,14 @@ const createExpressApp = () => {
         }
       });
 
-      res.cookie('authToken', '', {
+      res.cookie('userId', '', {
         expires: new Date(0), // Set expiry date to a time in the past
         httpOnly: true,
         secure: true, // Use secure in production (HTTPS)
         sameSite: 'lax', // Adjust depending on deployment
       });
 
-      clearAuthInfo(userId);
+      await clearAuthInfo(userId);
 
       logger.info('User logged out', { username });
       res.redirect(`${config.CLIENT_HOST}/login`);

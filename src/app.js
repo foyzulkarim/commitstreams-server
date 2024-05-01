@@ -18,7 +18,18 @@ function defineRoutes(expressApp) {
 
   domainRoutes(router);
 
-  expressApp.use('/api/v1', router);
+  // Authentication Middleware
+  function isAuthenticated(req, res, next) {
+    if (req.isAuthenticated()) {
+      // Passport's built-in method
+      return next(); // User is authenticated, proceed
+    } else {
+      logger.warn('User is not authenticated');
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+  }
+
+  expressApp.use('/api/v1', isAuthenticated, router);
   // health check
   expressApp.get('/health', (req, res) => {
     const healthCheck = {

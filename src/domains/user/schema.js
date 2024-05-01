@@ -13,7 +13,6 @@ const schema = new mongoose.Schema({
   },
   displayName: {
     type: String,
-    required: true,
   },
   username: {
     type: String,
@@ -26,7 +25,9 @@ const schema = new mongoose.Schema({
   },
 
   /* _json */
-  // url
+  avatarUrl: {
+    type: String,
+  },
   apiUrl: {
     type: String,
     required: true,
@@ -42,7 +43,6 @@ const schema = new mongoose.Schema({
   },
   email: {
     type: String,
-    required: true,
   },
   hireable: {
     type: Boolean,
