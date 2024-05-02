@@ -63,6 +63,9 @@ const getGitHubStrategy = () => {
           following: profile._json.following,
           created_at: profile._json.created_at,
           updated_at: profile._json.updated_at,
+          
+          isDemo: false,
+          isVerified: true,
         };
         console.log('DB payload:', { payload });
 

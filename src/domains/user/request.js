@@ -22,4 +22,11 @@ const idSchema = Joi.object().keys({
     .required(),
 });
 
-module.exports = { createSchema, updateSchema, idSchema };
+const searchSchema = Joi.object({
+  keyword: Joi.string().allow('').optional().max(10),
+  page: Joi.number().integer().min(0),
+  orderBy: Joi.string().valid('username', 'displayName'),
+  order: Joi.string().valid('asc', 'desc'),
+});
+
+module.exports = { createSchema, updateSchema, idSchema, searchSchema };

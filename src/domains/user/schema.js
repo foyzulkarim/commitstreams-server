@@ -64,11 +64,17 @@ const schema = new mongoose.Schema({
   // auth
   accessToken: {
     type: String,
-    required: true,
   },
   accessTokenIV: {
     type: String,
-    required: true,
+  },
+  isDemo: {
+    type: Boolean,
+    default: false,
+  },
+  isVerified: {
+    type: Boolean,
+    default: false,
   },
 });
 schema.add(baseSchema);

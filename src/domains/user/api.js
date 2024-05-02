@@ -5,12 +5,18 @@ const { AppError } = require('../../libraries/error-handling/AppError');
 const {
   create,
   search,
+  count,
   getById,
   updateById,
   deleteById,
 } = require('./service');
 
-const { createSchema, updateSchema, idSchema } = require('./request');
+const {
+  createSchema,
+  updateSchema,
+  idSchema,
+  searchSchema,
+} = require('./request');
 const { validateRequest } = require('../../middlewares/request-validate');
 const { logRequest } = require('../../middlewares/log');
 
@@ -21,15 +27,34 @@ const routes = () => {
   const router = express.Router();
   logger.info(`Setting up routes for ${model}`);
 
-  router.get('/', logRequest({}), async (req, res, next) => {
-    try {
-      // TODO: Add pagination and filtering
-      const items = await search(req.query);
-      res.json(items);
-    } catch (error) {
-      next(error);
+  router.get(
+    '/search',
+    logRequest({}),
+    validateRequest({ schema: searchSchema, isQuery: true }),
+    async (req, res, next) => {
+      try {
+        // TODO: Add pagination and filtering
+        const items = await search(req.query);
+        res.json(items);
+      } catch (error) {
+        next(error);
+      }
     }
-  });
+  );
+
+  router.get(
+    '/count',
+    logRequest({}),
+    validateRequest({ schema: searchSchema, isQuery: true }),
+    async (req, res, next) => {
+      try {
+        const total = await count(req.query);
+        res.json({ total });
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
 
   router.post(
     '/',

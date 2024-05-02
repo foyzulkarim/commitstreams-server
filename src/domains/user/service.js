@@ -4,6 +4,7 @@ const Model = require('./schema');
 const { AppError } = require('../../libraries/error-handling/AppError');
 
 const model = 'user';
+const projection = { accessToken: 0, accessTokenIV: 0 };
 
 const create = async (data) => {
   try {
@@ -21,15 +22,30 @@ const create = async (data) => {
 
 const search = async (query) => {
   try {
-    const { keyword } = query ?? {};
+    logger.info(`search(): ${model} search`, { query });
+    const pageSize = 10;
+    const {
+      keyword,
+      page = 0,
+      orderBy = 'username',
+      order = 'asc',
+    } = query ?? {};
+
     const filter = {};
     if (keyword) {
-      filter.or = [
-        { name: { regex: keyword, options: 'i' } },
-        { description: { regex: keyword, options: 'i' } },
+      // like search on multiple fields with keyword
+      filter.$or = [
+        { username: { $regex: keyword, $options: 'i' } },
+        { displayName: { $regex: keyword, $options: 'i' } },
       ];
     }
-    const items = await Model.find(filter);
+
+    // implement paginated search with order and orderBy
+    const items = await Model.find(filter, projection)
+      .sort({ [orderBy]: order === 'asc' ? 1 : -1 })
+      .skip(page * pageSize)
+      .limit(pageSize);
+
     logger.info('search(): filter and count', {
       filter,
       count: items.length,
@@ -38,6 +54,31 @@ const search = async (query) => {
   } catch (error) {
     logger.error(`search(): Failed to search ${model}`, error);
     throw new AppError(`Failed to search ${model}`, error.message, 400);
+  }
+};
+
+// count of the items without skip and limit
+const count = async (query) => {
+  try {
+    const { keyword } = query ?? {};
+
+    const filter = {};
+    if (keyword) {
+      // like search on multiple fields with keyword
+      filter.$or = [
+        { username: { $regex: keyword, $options: 'i' } },
+        { displayName: { $regex: keyword, $options: 'i' } },
+      ];
+    }
+    const total = await Model.countDocuments(filter);
+    logger.info('count(): filter and count', {
+      filter,
+      count: total,
+    });
+    return total;
+  } catch (error) {
+    logger.error(`count(): Failed to count ${model}`, error);
+    throw new AppError(`Failed to count ${model}`, error.message, 400);
   }
 };
 
@@ -84,6 +125,7 @@ const getByGitHubId = async (id) => {
 module.exports = {
   create,
   search,
+  count,
   getById,
   updateById,
   deleteById,
