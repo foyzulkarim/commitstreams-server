@@ -26,6 +26,7 @@ const schema = Joi.object({
     .pattern(/^(http:\/\/|https:\/\/)/)
     .required(),
   SESSION_SECRET: Joi.string().required(),
+  ENCRYPTION_KEY: Joi.string().required(),
 });
 
 module.exports = schema;

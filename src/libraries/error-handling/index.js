@@ -39,6 +39,7 @@ const errorHandler = {
       if (!appError.isTrusted) {
         terminateHttpServerAndExit();
       }
+      return appError;
     } catch (handlingError) {
       // No logger here since it might have failed
       process.stdout.write(

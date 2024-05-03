@@ -3,18 +3,17 @@ const express = require('express');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
-const pick = require('lodash/pick');
-const get = require('lodash/get');
 
 const passport = require('passport');
-const GitHubStrategy = require('passport-github2').Strategy;
 const session = require('express-session');
+const MongoStore = require('connect-mongo'); // For storing sessions in MongoDB
 
 const defineRoutes = require('./app');
 const { errorHandler } = require('./libraries/error-handling');
 const logger = require('./libraries/log/logger');
 const { addRequestIdMiddleware } = require('./middlewares/request-context');
 const { connectWithMongoDb } = require('./libraries/db');
+const { getGitHubStrategy, clearAuthInfo } = require('./auth');
 
 let connection;
 
@@ -32,36 +31,14 @@ const createExpressApp = () => {
     })
   );
 
-  passport.use(
-    new GitHubStrategy(
-      {
-        clientID: config.GITHUB_CLIENT_ID,
-        clientSecret: config.GITHUB_CLIENT_SECRET,
-        callbackURL: `${config.HOST}/api/auth/github/callback`,
-      },
-      function (accessToken, refreshToken, profile, cb) {
-        const pickedProfile = pick(profile, [
-          'id',
-          'nodeId',
-          'profileUrl',
-          'provider',
-          'username',
-        ]);
-        const email = get(profile, 'emails[0].value', '');
-        logger.info('GitHub profile:', { ...pickedProfile, email });
-        // Find or create a user in your database here
-        // For now, we'll just return the profile
-        profile.accessToken = accessToken;
-        return cb(null, profile);
-      }
-    )
-  );
+  passport.use(getGitHubStrategy());
 
   expressApp.use(
     session({
       secret: config.SESSION_SECRET,
       resave: false,
       saveUninitialized: true,
+      store: MongoStore.create({ mongoUrl: config.MONGODB_URI }),
     })
   );
 
@@ -93,9 +70,9 @@ const createExpressApp = () => {
     function (req, res) {
       logger.info('/api/auth/github/callback', { username: req.user.username });
       // prepare the cookie here
-      const accessToken = req.user.accessToken; // Assuming this exists
+      const userId = req.user._id.toString();
 
-      res.cookie('authToken', accessToken, {
+      res.cookie('userId', userId, {
         httpOnly: true,
         secure: true, // Use secure in production (HTTPS)
         sameSite: 'lax', // Adjust depending on deployment
@@ -107,44 +84,43 @@ const createExpressApp = () => {
   // get current logged in user data from req.user object
   expressApp.get('/api/user', (req, res) => {
     if (!req.user) {
-      console.log('headers', req.headers);
       return res.status(401).send('Unauthorized');
     }
-
-    res.json(req.user);
+    const { accessToken, accessTokenIV, ...user } = req.user;
+    res.json(user);
   });
-  expressApp.get('/api/github-data', (req, res) => {
-    if (!req.user) {
-      return res.status(401).send('Unauthorized');
-    }
+  expressApp.get('/api/logout', async (req, res, next) => {
+    const username = req.user?.username;
+    const userId = req.user?._id;
+    console.log('Logging out user:', { user: req.user });
 
-    const accessToken = req.user.accessToken;
-
-    axios
-      .get('https://api.github.com/user', {
-        headers: {
-          Authorization: `token ${accessToken}`,
-        },
-      })
-      .then((response) => {
-        res.json(response.data);
-      })
-      .catch((error) => {
-        console.error('Error fetching GitHub data:', error);
-        res.status(500).json({ error: 'Error fetching data' });
-      });
-  });
-  expressApp.post('/api/logout', (req, res) => {
-    req.logout(function (err) {
+    req.logout(async function (err) {
       // Passport.js logout function
       if (err) {
+        logger.error('Failed to log out user', err);
         return next(err);
       }
 
       req.session.destroy(function (err) {
         // Handle potential errors during session destruction
-        res.json('Logged out successfully');
+        if (err) {
+          logger.error('Failed to destroy session', err);
+        } else {
+          logger.info('Session destroyed');
+        }
       });
+
+      res.cookie('userId', '', {
+        expires: new Date(0), // Set expiry date to a time in the past
+        httpOnly: true,
+        secure: true, // Use secure in production (HTTPS)
+        sameSite: 'lax', // Adjust depending on deployment
+      });
+
+      await clearAuthInfo(userId);
+
+      logger.info('User logged out', { username });
+      res.redirect(`${config.CLIENT_HOST}/login`);
     });
   });
 
@@ -193,8 +169,15 @@ function defineErrorHandlingMiddleware(expressApp) {
       }
     }
 
-    errorHandler.handleError(error);
-    res.status(error?.HTTPStatus || 500).end();
+    const appError = await errorHandler.handleError(error);
+    res
+      .status(error?.HTTPStatus || 500)
+      .json(
+        { ...appError, errorMessage: appError.message } || {
+          message: 'Internal server error',
+        }
+      )
+      .end();
   });
 }
 
