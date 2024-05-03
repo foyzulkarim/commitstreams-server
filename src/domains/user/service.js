@@ -122,6 +122,47 @@ const getByGitHubId = async (id) => {
   } catch (error) {}
 };
 
+const followUser = async (followerId, followedId) => {
+  try {
+    // Check existing following status (Optimized)
+    const follower = await Model.findById(followerId);
+    const existingFollowing = follower.csFollowing.find((item) =>
+      item.id.equals(followedId)
+    );
+
+    if (existingFollowing) {
+      logger.info(
+        `followUser(): User ${followerId} is already following user ${followedId}`
+      );
+      return false;
+    }
+
+    // Perform the updates
+    const [followedUserUpdate, followerUserUpdate] = await Promise.all([
+      // Update csFollowers of the followed user
+      Model.findByIdAndUpdate(followedId, {
+        $push: { csFollowers: { id: followerId, date: Date.now() } }, // Add follow date
+      }),
+
+      // Update csFollowing of the follower user
+      Model.findByIdAndUpdate(followerId, {
+        $push: { csFollowing: { id: followedId, date: Date.now() } },
+      }),
+    ]);
+
+    logger.info(`followUser(): success`, {
+      followedId,
+      followedId,
+      followedUserUpdate,
+      followerUserUpdate,
+    });
+    return true;
+  } catch (error) {
+    logger.error(`followUser(): Failed to update follow status`, error);
+    throw new AppError(`Failed to update follow status`, error.message);
+  }
+};
+
 module.exports = {
   create,
   search,
@@ -130,4 +171,5 @@ module.exports = {
   updateById,
   deleteById,
   getByGitHubId,
+  followUser,
 };

@@ -76,6 +76,20 @@ const schema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+
+  // commitstreams related similar properties
+  csFollowers: [
+    {
+      id: { type: mongoose.Schema.Types.ObjectId },
+      date: { type: Date, default: Date.now },
+    },
+  ],
+  csFollowing: [
+    {
+      id: { type: mongoose.Schema.Types.ObjectId },
+      date: { type: Date, default: Date.now },
+    },
+  ],
 });
 schema.add(baseSchema);
 

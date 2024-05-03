@@ -9,6 +9,7 @@ const {
   getById,
   updateById,
   deleteById,
+  followUser,
 } = require('./service');
 
 const {
@@ -50,6 +51,29 @@ const routes = () => {
       try {
         const total = await count(req.query);
         res.json({ total });
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
+  router.get(
+    '/:id/follow',
+    logRequest({}),
+    validateRequest({ schema: idSchema, isParam: true }),
+    async (req, res, next) => {
+      const currentUserId = req.user._id;
+      try {
+        if (currentUserId === req.params.id) {
+          throw new AppError(
+            'Cannot follow yourself',
+            'Cannot follow yourself',
+            400
+          );
+        }
+
+        const result = await followUser(currentUserId, req.params.id);
+        res.status(200).json({ result });
       } catch (error) {
         next(error);
       }

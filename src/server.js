@@ -169,8 +169,15 @@ function defineErrorHandlingMiddleware(expressApp) {
       }
     }
 
-    errorHandler.handleError(error);
-    res.status(error?.HTTPStatus || 500).end();
+    const appError = await errorHandler.handleError(error);
+    res
+      .status(error?.HTTPStatus || 500)
+      .json(
+        { ...appError, errorMessage: appError.message } || {
+          message: 'Internal server error',
+        }
+      )
+      .end();
   });
 }
 
