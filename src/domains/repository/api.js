@@ -27,15 +27,20 @@ const routes = () => {
   const router = express.Router();
   logger.info(`Setting up routes for ${model}`);
 
-  router.get('/', logRequest({}), async (req, res, next) => {
-    try {
-      // TODO: Add pagination and filtering
-      const items = await search(req.query);
-      res.json(items);
-    } catch (error) {
-      next(error);
+  router.post(
+    '/search',
+    logRequest({}),
+    validateRequest({ schema: fetchRepoSchema }),
+    async (req, res, next) => {
+      try {
+        // TODO: Add pagination and filtering
+        const item = await search(req.body);
+        res.json(item);
+      } catch (error) {
+        next(error);
+      }
     }
-  });
+  );
 
   // fetch repository details from GitHub API
   router.post(
@@ -45,7 +50,7 @@ const routes = () => {
     async (req, res, next) => {
       try {
         console.log('req.user._id', req.user);
-        
+
         const { username, repository } = req.body;
         const repoDetails = await fetchGitHubRepoDetails(
           username,

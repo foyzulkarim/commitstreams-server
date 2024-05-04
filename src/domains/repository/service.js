@@ -23,22 +23,27 @@ const create = async (data) => {
   }
 };
 
-const search = async (query) => {
+const search = async (searchPayload) => {
   try {
-    const { keyword } = query ?? {};
-    const filter = {};
-    if (keyword) {
-      filter.or = [
-        { name: { regex: keyword, options: 'i' } },
-        { description: { regex: keyword, options: 'i' } },
-      ];
+    const { username, repository } = searchPayload ?? {};
+
+    // if username or repository is not provided, throw an error
+    if (!username || !repository) {
+      throw new AppError('Username and Repository are required', 'Bad Request', 400);
     }
-    const items = await Model.find(filter);
+
+    let filter = {};
+    if (username && repository) {
+      filter = {
+        full_name: `${username}/${repository}`,
+      }
+    }
+    const item = await Model.findOne(filter).exec();
     logger.info('search(): filter and count', {
       filter,
-      count: items.length,
+      count: Boolean(item) ? 1 : 0,
     });
-    return items;
+    return item;
   } catch (error) {
     logger.error(`search(): Failed to search ${model}`, error);
     throw new AppError(`Failed to search ${model}`, error.message, 400);
