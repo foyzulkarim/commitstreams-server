@@ -22,6 +22,11 @@ const idSchema = Joi.object().keys({
     .required(),
 });
 
+const fetchRepoSchema = Joi.object().keys({
+  username: Joi.string().required(),
+  repository: Joi.string().required(),
+});
+
 const searchSchema = Joi.object({
   keyword: Joi.string().allow('').optional().max(10),
   page: Joi.number().integer().min(0),
@@ -29,4 +34,4 @@ const searchSchema = Joi.object({
   order: Joi.string().valid('asc', 'desc'),
 });
 
-module.exports = { createSchema, updateSchema, idSchema, searchSchema };
+module.exports = { createSchema, updateSchema, idSchema, searchSchema, fetchRepoSchema };

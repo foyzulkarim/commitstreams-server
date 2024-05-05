@@ -141,12 +141,12 @@ const followUser = async (followerId, followedId) => {
     const [followedUserUpdate, followerUserUpdate] = await Promise.all([
       // Update csFollowers of the followed user
       Model.findByIdAndUpdate(followedId, {
-        $push: { csFollowers: { id: followerId, date: Date.now() } }, // Add follow date
+        $push: { csFollowers: { _id: followerId, date: Date.now() } }, // Add follow date
       }),
 
       // Update csFollowing of the follower user
       Model.findByIdAndUpdate(followerId, {
-        $push: { csFollowing: { id: followedId, date: Date.now() } },
+        $push: { csFollowing: { _id: followedId, date: Date.now() } },
       }),
     ]);
 

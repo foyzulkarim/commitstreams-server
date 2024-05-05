@@ -9,7 +9,8 @@ const {
   updateById,
 } = require('../domains/user/service');
 
-function encryptToken(token, encryptionKey) {
+function encryptToken(token) {
+  const encryptionKey = config.ENCRYPTION_KEY;
   const iv = crypto.randomBytes(16); // Generate a secure IV
   const cipher = crypto.createCipheriv('aes-256-cbc', encryptionKey, iv);
   let encrypted = cipher.update(token, 'utf-8', 'hex');
@@ -21,7 +22,8 @@ function encryptToken(token, encryptionKey) {
   };
 }
 
-function decryptRefreshToken(encryptedToken, iv, encryptionKey) {
+function decryptToken(encryptedToken, iv) {
+  const encryptionKey = config.ENCRYPTION_KEY;
   const decipher = crypto.createDecipheriv(
     'aes-256-cbc',
     encryptionKey,
@@ -63,14 +65,14 @@ const getGitHubStrategy = () => {
           following: profile._json.following,
           created_at: profile._json.created_at,
           updated_at: profile._json.updated_at,
-          
+
           isDemo: false,
           isVerified: true,
         };
         console.log('DB payload:', { payload });
 
         let user = await getByGitHubId(profile.id);
-        const tokenInfo = encryptToken(accessToken, config.ENCRYPTION_KEY);
+        const tokenInfo = encryptToken(accessToken);
         if (user) {
           console.log('User already exists', user);
           // Update the user with the latest data
@@ -110,4 +112,5 @@ const clearAuthInfo = async (userId) => {
 module.exports = {
   getGitHubStrategy,
   clearAuthInfo,
+  decryptToken,
 };

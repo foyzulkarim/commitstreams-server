@@ -22,6 +22,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@octokit/rest": "^20.1.1",
     "compression": "^1.7.4",
     "connect-mongo": "^5.1.0",
     "cookie-parser": "^1.4.6",
@@ -37,6 +38,7 @@
     "mongoose": "^8.3.0",
     "morgan": "^1.10.0",
     "nodemon": "^3.1.0",
+    "octokit": "^3.2.1",
     "passport": "^0.7.0",
     "passport-github2": "^0.1.12",
     "pm2": "^5.3.1",
