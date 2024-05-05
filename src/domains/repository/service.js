@@ -258,7 +258,7 @@ const followRepository = async (followerId, repositoryId) => {
     // Check existing following status
     const follower = await User.findById(followerId);
     const existingFollowing = follower.csFollowingRepositories.find((item) =>
-      item.id.equals(repositoryId)
+      item._id.equals(repositoryId)
     );
 
     if (existingFollowing) {
@@ -272,13 +272,13 @@ const followRepository = async (followerId, repositoryId) => {
     const [repositoryUpdate, followerUserUpdate] = await Promise.all([
       // Update csFollowers of the repository
       Model.findByIdAndUpdate(repositoryId, {
-        $push: { csFollowers: { id: followerId, date: Date.now() } }, // Add follow date
+        $push: { csFollowers: { _id: followerId, date: Date.now() } }, 
       }),
 
       // Update csFollowingRepositories of the follower user
       User.findByIdAndUpdate(followerId, {
         $push: {
-          csFollowingRepositories: { id: repositoryId, date: Date.now() },
+          csFollowingRepositories: { _id: repositoryId, date: Date.now() },
         },
       }),
     ]);

@@ -38,7 +38,7 @@ const RepositorySchema = new mongoose.Schema({
   // commitstreams related similar properties
   csFollowers: [
     {
-      id: { type: mongoose.Schema.Types.ObjectId },
+      _id: { type: mongoose.Schema.Types.ObjectId },
       date: { type: Date, default: Date.now },
     },
   ],
