@@ -90,6 +90,12 @@ const schema = new mongoose.Schema({
       date: { type: Date, default: Date.now },
     },
   ],
+  csFollowingRepositories: [
+    {
+      id: { type: mongoose.Schema.Types.ObjectId },
+      date: { type: Date, default: Date.now },
+    },
+  ],
 });
 schema.add(baseSchema);
 

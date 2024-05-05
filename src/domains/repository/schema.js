@@ -34,6 +34,14 @@ const RepositorySchema = new mongoose.Schema({
   topics: [String],
   visibility: String,
   default_branch: String,
+
+  // commitstreams related similar properties
+  csFollowers: [
+    {
+      id: { type: mongoose.Schema.Types.ObjectId },
+      date: { type: Date, default: Date.now },
+    },
+  ],
 });
 
 module.exports = mongoose.model('Repository', RepositorySchema);

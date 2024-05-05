@@ -25,7 +25,7 @@ const idSchema = Joi.object().keys({
 const searchSchema = Joi.object({
   keyword: Joi.string().allow('').optional().max(10),
   page: Joi.number().integer().min(0),
-  orderBy: Joi.string().valid('username', 'displayName'),
+  orderBy: Joi.string(),
   order: Joi.string().valid('asc', 'desc'),
 });
 

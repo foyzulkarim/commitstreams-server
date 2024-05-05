@@ -8,6 +8,7 @@ const { fetchRepoDetails } = require('../../libraries/util/githubUtils');
 const { decryptToken } = require('../../auth');
 
 const model = 'repository';
+const projection = {};
 
 const create = async (data) => {
   try {
@@ -23,20 +24,88 @@ const create = async (data) => {
   }
 };
 
-const search = async (searchPayload) => {
+const search = async (query) => {
+  try {
+    logger.info(`search(): ${model} search`, { query });
+    const pageSize = 10;
+    const {
+      keyword,
+      page = 0,
+      orderBy = 'full_name',
+      order = 'asc',
+    } = query ?? {};
+
+    const filter = {};
+    if (keyword) {
+      // like search on multiple fields with keyword
+      filter.$or = [
+        { full_name: { $regex: keyword, $options: 'i' } },
+        { language: { $regex: keyword, $options: 'i' } },
+        // { topics: { $regex: keyword, $options: 'i' } },
+      ];
+    }
+
+    // implement paginated search with order and orderBy
+    const items = await Model.find(filter, projection)
+      .sort({ [orderBy]: order === 'asc' ? 1 : -1 })
+      .skip(page * pageSize)
+      .limit(pageSize);
+
+    logger.info('search(): filter and count', {
+      filter,
+      count: items.length,
+    });
+    return items;
+  } catch (error) {
+    logger.error(`search(): Failed to search ${model}`, error);
+    throw new AppError(`Failed to search ${model}`, error.message, 400);
+  }
+};
+
+const count = async (query) => {
+  try {
+    const { keyword } = query ?? {};
+
+    const filter = {};
+    if (keyword) {
+      // like search on multiple fields with keyword
+      filter.$or = [
+        { full_name: { $regex: keyword, $options: 'i' } },
+        { language: { $regex: keyword, $options: 'i' } },
+        // { topics: { $regex: keyword, $options: 'i' } },
+      ];
+    }
+
+    const total = await Model.countDocuments(filter);
+    logger.info('count(): filter and count', {
+      filter,
+      count: total,
+    });
+    return total;
+  } catch (error) {
+    logger.error(`count(): Failed to count ${model}`, error);
+    throw new AppError(`Failed to count ${model}`, error.message, 400);
+  }
+};
+
+const searchOne = async (searchPayload) => {
   try {
     const { username, repository } = searchPayload ?? {};
 
     // if username or repository is not provided, throw an error
     if (!username || !repository) {
-      throw new AppError('Username and Repository are required', 'Bad Request', 400);
+      throw new AppError(
+        'Username and Repository are required',
+        'Bad Request',
+        400
+      );
     }
 
     let filter = {};
     if (username && repository) {
       filter = {
         full_name: `${username}/${repository}`,
-      }
+      };
     }
     const item = await Model.findOne(filter).exec();
     logger.info('search(): filter and count', {
@@ -102,7 +171,7 @@ const mapGithubResponseToSchema = (response) => {
     url: response.url,
     created_at: new Date(response.created_at),
     updated_at: new Date(response.updated_at),
-    pushed_at: new Date(response.pushed_at),    
+    pushed_at: new Date(response.pushed_at),
     homepage: response.homepage,
     size: response.size,
     stargazers_count: response.stargazers_count,
@@ -119,7 +188,7 @@ const mapGithubResponseToSchema = (response) => {
       spdx_id: response.license.spdx_id,
       url: response.license.url,
       node_id: response.license.node_id,
-    },    
+    },
     topics: response.topics,
     visibility: response.visibility,
     default_branch: response.default_branch,
@@ -165,9 +234,7 @@ const fetchGitHubRepoDetails = async (owner, repo, user) => {
     // if it exists, update the repository details using mapSelectedGithubResponseToSchema
     // else create the repository using mapGithubResponseToSchema
     const { id } = response;
-    const existingRepository = await Model
-      .findOne({ id })
-      .exec();
+    const existingRepository = await Model.findOne({ id }).exec();
     if (existingRepository) {
       const data = mapSelectedGithubResponseToSchema(response);
       const updatedRepository = await updateById(existingRepository._id, data);
@@ -186,11 +253,56 @@ const fetchGitHubRepoDetails = async (owner, repo, user) => {
   }
 };
 
+const followRepository = async (followerId, repositoryId) => {
+  try {
+    // Check existing following status
+    const follower = await User.findById(followerId);
+    const existingFollowing = follower.csFollowingRepositories.find((item) =>
+      item.id.equals(repositoryId)
+    );
+
+    if (existingFollowing) {
+      logger.info(
+        `followRepository(): User ${followerId} is already following repository ${repositoryId}`
+      );
+      return false;
+    }
+
+    // Perform the updates
+    const [repositoryUpdate, followerUserUpdate] = await Promise.all([
+      // Update csFollowers of the repository
+      Model.findByIdAndUpdate(repositoryId, {
+        $push: { csFollowers: { id: followerId, date: Date.now() } }, // Add follow date
+      }),
+
+      // Update csFollowingRepositories of the follower user
+      User.findByIdAndUpdate(followerId, {
+        $push: {
+          csFollowingRepositories: { id: repositoryId, date: Date.now() },
+        },
+      }),
+    ]);
+
+    logger.info(`followRepository(): success`, {
+      repositoryId,
+      repositoryUpdate,
+      followerUserUpdate,
+    });
+    return true;
+  } catch (error) {
+    logger.error(`followRepository(): Failed to update follow status`, error);
+    throw new AppError(`Failed to update follow status`, error.message);
+  }
+};
+
 module.exports = {
   create,
   search,
+  count,
+  searchOne,
   getById,
   updateById,
   deleteById,
   fetchGitHubRepoDetails,
+  followRepository,
 };

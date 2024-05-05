@@ -27,4 +27,11 @@ const fetchRepoSchema = Joi.object().keys({
   repository: Joi.string().required(),
 });
 
-module.exports = { createSchema, updateSchema, idSchema, fetchRepoSchema };
+const searchSchema = Joi.object({
+  keyword: Joi.string().allow('').optional().max(10),
+  page: Joi.number().integer().min(0),
+  orderBy: Joi.string(),
+  order: Joi.string().valid('asc', 'desc'),
+});
+
+module.exports = { createSchema, updateSchema, idSchema, searchSchema, fetchRepoSchema };
