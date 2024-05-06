@@ -92,7 +92,6 @@ const createExpressApp = () => {
   expressApp.get('/api/logout', async (req, res, next) => {
     const username = req.user?.username;
     const userId = req.user?._id;
-    console.log('Logging out user:', { user: req.user });
 
     req.logout(async function (err) {
       // Passport.js logout function

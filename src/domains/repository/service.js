@@ -226,10 +226,8 @@ const fetchGitHubRepoDetails = async (owner, repo, user) => {
     const dbUser = await User.findById(_id).exec();
     const { accessToken, accessTokenIV } = dbUser;
     const token = decryptToken(accessToken, accessTokenIV);
-    console.log('token:', { owner, repo, token });
 
     const response = await fetchRepoDetails(owner, repo, token);
-    console.log('response', response);
     // check if the repository already exists in the database by id node_id
     // if it exists, update the repository details using mapSelectedGithubResponseToSchema
     // else create the repository using mapGithubResponseToSchema
@@ -241,7 +239,6 @@ const fetchGitHubRepoDetails = async (owner, repo, user) => {
       return updatedRepository;
     }
     const data = mapGithubResponseToSchema(response);
-    console.log('data:', data);
     const repository = await create(data);
     return repository;
   } catch (error) {

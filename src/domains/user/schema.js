@@ -97,6 +97,7 @@ const schema = new mongoose.Schema({
     },
   ],
 });
+
 schema.add(baseSchema);
 
 module.exports = mongoose.model('User', schema);

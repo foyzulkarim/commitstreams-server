@@ -69,12 +69,10 @@ const getGitHubStrategy = () => {
           isDemo: false,
           isVerified: true,
         };
-        console.log('DB payload:', { payload });
 
         let user = await getByGitHubId(profile.id);
         const tokenInfo = encryptToken(accessToken);
         if (user) {
-          console.log('User already exists', user);
           // Update the user with the latest data
           user = Object.assign(user, payload, {
             accessToken: tokenInfo.token,
