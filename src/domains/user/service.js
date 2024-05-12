@@ -148,15 +148,15 @@ const followUser = async (followerId, followedId) => {
   try {
     // Check existing following status (Optimized)
     const follower = await Model.findById(followerId);
-    const existingFollowing = follower.csFollowing.find((item) =>
-      item.id.equals(followedId)
+    const existingFollowing = follower.csFollowing.find(
+      (item) => item._id.toString() === followedId.toString()
     );
 
     if (existingFollowing) {
       logger.info(
         `followUser(): User ${followerId} is already following user ${followedId}`
       );
-      return false;
+      return true;
     }
 
     // Perform the updates
@@ -195,5 +195,5 @@ module.exports = {
   getByGitHubId,
   followUser,
   deactivateUser,
-  activateUser
+  activateUser,
 };
