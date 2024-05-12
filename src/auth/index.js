@@ -74,12 +74,17 @@ const getGitHubStrategy = () => {
         };
 
         let user = await getByGitHubId(profile.id);
-        if (user.isDeactivated) {
-          throw new AppError('user-is-deactivated', 'User is deactivated', 401);
-        }
 
         const tokenInfo = encryptToken(accessToken);
         if (user) {
+          if (user.isDeactivated) {
+            throw new AppError(
+              'user-is-deactivated',
+              'User is deactivated',
+              401
+            );
+          }
+
           // Update the user with the latest data
           user = Object.assign(user, payload, {
             accessToken: tokenInfo.token,
@@ -109,7 +114,7 @@ const getGitHubStrategy = () => {
           avatarUrl: userObj.avatarUrl,
           email: userObj.email,
         };
-        
+
         cb(null, trimmedPayloadForSession); // Pass the user object to the session
       } catch (error) {
         cb(error, null);
