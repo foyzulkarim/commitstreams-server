@@ -72,8 +72,9 @@ const createExpressApp = () => {
         },
         (err, user, info, status) => {
           if (err || !user) {
+            logger.error('Failed to authenticate user', err);
             return res.redirect(
-              `${config.CLIENT_HOST}/login?error=${err.name}`
+              `${config.CLIENT_HOST}/login?error=${err?.name}`
             );
           }
           req.logIn(user, function (err) {
