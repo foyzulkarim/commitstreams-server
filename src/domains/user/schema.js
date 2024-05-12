@@ -76,6 +76,14 @@ const schema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  isAdmin: {
+    type: Boolean,
+    default: false,
+  },
+  isDeactivated: {
+    type: Boolean,
+    default: false,
+  },
 
   // commitstreams related similar properties
   csFollowers: [

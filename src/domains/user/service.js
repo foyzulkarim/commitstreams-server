@@ -115,6 +115,28 @@ const deleteById = async (id) => {
   }
 };
 
+const deactivateUser = async (id) => {
+  try {
+    const item = await Model.findByIdAndUpdate(id, { isDeactivated: true });
+    logger.info(`deactivateUser(): ${model} deactivated`, { id });
+    return item;
+  } catch (error) {
+    logger.error(`deactivateUser(): Failed to deactivate ${model}`, error);
+    throw new AppError(`Failed to deactivate ${model}`, error.message);
+  }
+};
+
+const activateUser = async (id) => {
+  try {
+    const item = await Model.findByIdAndUpdate(id, { isDeactivated: false });
+    logger.info(`activateUser(): ${model} activated`, { id });
+    return item;
+  } catch (error) {
+    logger.error(`activateUser(): Failed to activate ${model}`, error);
+    throw new AppError(`Failed to activate ${model}`, error.message);
+  }
+};
+
 const getByGitHubId = async (id) => {
   try {
     const item = await Model.findOne({ githubId: id });
@@ -172,4 +194,6 @@ module.exports = {
   deleteById,
   getByGitHubId,
   followUser,
+  deactivateUser,
+  activateUser
 };

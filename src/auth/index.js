@@ -8,6 +8,7 @@ const {
   create,
   updateById,
 } = require('../domains/user/service');
+const { AppError } = require('../libraries/error-handling/AppError');
 
 function encryptToken(token) {
   const encryptionKey = config.ENCRYPTION_KEY;
@@ -43,6 +44,7 @@ const getGitHubStrategy = () => {
     },
     async (accessToken, refreshToken, profile, cb) => {
       try {
+        const isAdmin = config.ADMIN_USERNAMES.includes(profile.username);
         // Create a new user from GitHub API Profile data
         const payload = {
           githubId: profile.id,
@@ -68,9 +70,14 @@ const getGitHubStrategy = () => {
 
           isDemo: false,
           isVerified: true,
+          isAdmin,
         };
 
         let user = await getByGitHubId(profile.id);
+        if (user.isDeactivated) {
+          throw new AppError('user-is-deactivated', 'User is deactivated', 401);
+        }
+
         const tokenInfo = encryptToken(accessToken);
         if (user) {
           // Update the user with the latest data
@@ -89,8 +96,21 @@ const getGitHubStrategy = () => {
           });
         }
         const userObj = user.toObject();
-        const { accessTokenIV, ...others } = userObj;
-        cb(null, others); // Pass the user object to the session
+        const trimmedPayloadForSession = {
+          _id: userObj._id,
+          githubId: userObj.githubId,
+          nodeId: userObj.nodeId,
+          isAdmin: userObj.isAdmin,
+          isDeactivated: userObj.isDeactivated,
+          isDemo: userObj.isDemo,
+          // UI info
+          username: userObj.username,
+          displayName: userObj.displayName,
+          avatarUrl: userObj.avatarUrl,
+          email: userObj.email,
+        };
+        
+        cb(null, trimmedPayloadForSession); // Pass the user object to the session
       } catch (error) {
         cb(error, null);
       }
