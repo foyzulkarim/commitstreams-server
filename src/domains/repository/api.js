@@ -11,7 +11,7 @@ const {
   updateById,
   deleteById,
   fetchGitHubRepoDetails,
-  followRepository
+  followRepository,
 } = require('./service');
 
 const {
@@ -135,38 +135,6 @@ const routes = () => {
           throw new AppError(`${model} not found`, `${model} not found`, 404);
         }
         res.status(200).json(item);
-      } catch (error) {
-        next(error);
-      }
-    }
-  );
-
-  router.put(
-    '/:id',
-    logRequest({}),
-    validateRequest({ schema: idSchema, isParam: true }),
-    validateRequest({ schema: updateSchema }),
-    async (req, res, next) => {
-      try {
-        const item = await updateById(req.params.id, req.body);
-        if (!item) {
-          throw new AppError(`${model} not found`, `${model} not found`, 404);
-        }
-        res.status(200).json(item);
-      } catch (error) {
-        next(error);
-      }
-    }
-  );
-
-  router.delete(
-    '/:id',
-    logRequest({}),
-    validateRequest({ schema: idSchema, isParam: true }),
-    async (req, res, next) => {
-      try {
-        await deleteById(req.params.id);
-        res.status(204).json({ message: `${model} is deleted` });
       } catch (error) {
         next(error);
       }
