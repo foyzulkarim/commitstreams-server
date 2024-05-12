@@ -12,10 +12,10 @@
     "test:watch": "jest --watch --verbose",
     "start": "node src/start.js",
     "dev": "nodemon src/start.js",
-    "start:prod": "NODE_ENV=production pm2 start src/start.js --node-args='--arg1=value1 --env=production'",
+    "start:prod": "NODE_ENV=production pm2 start src/start.js",
     "stop:prod": "pm2 stop src/start.js",
     "logs:prod": "pm2 logs src/start.js",
-    "restart:prod": "NODE_ENV=production pm2 restart src/start.js --node-args='--arg1=value1 --env=production'",
+    "restart:prod": "NODE_ENV=production pm2 restart src/start.js",
     "create-domain": "zx scripts/dev/domain-generator.js"
   },
   "keywords": [],
