@@ -5,13 +5,10 @@ const { AppError } = require('../../libraries/error-handling/AppError');
 const {
   create,
   search,
-  count,
-  searchOne,
   getById,
   updateById,
   deleteById,
-  fetchGitHubRepoDetails,
-  followRepository,
+  fetchGitHubPullRequests,
 } = require('./service');
 
 const {
@@ -19,12 +16,11 @@ const {
   updateSchema,
   idSchema,
   searchSchema,
-  fetchRepoSchema,
 } = require('./request');
 const { validateRequest } = require('../../middlewares/request-validate');
 const { logRequest } = require('../../middlewares/log');
 
-const model = 'Repository';
+const model = 'pull';
 
 // CRUD for entity
 const routes = () => {
@@ -60,69 +56,14 @@ const routes = () => {
     }
   );
 
-  router.post(
-    '/search-one',
-    logRequest({}),
-    validateRequest({ schema: fetchRepoSchema }),
-    async (req, res, next) => {
-      try {
-        // TODO: Add pagination and filtering
-        const item = await searchOne(req.body);
-        res.json(item);
-      } catch (error) {
-        next(error);
-      }
+  router.get('/fetch-updates', logRequest({}), async (req, res, next) => {
+    try {
+      const items = await fetchGitHubPullRequests(req.user);
+      res.json(items);
+    } catch (error) {
+      next(error);
     }
-  );
-
-  // fetch repository details from GitHub API
-  router.post(
-    '/fetch-from-github',
-    logRequest({}),
-    validateRequest({ schema: fetchRepoSchema }),
-    async (req, res, next) => {
-      try {
-        const { username, repository } = req.body;
-        const repoDetails = await fetchGitHubRepoDetails(
-          username,
-          repository,
-          req.user
-        );
-        res.status(200).json(repoDetails);
-      } catch (error) {
-        next(error);
-      }
-    }
-  );
-
-  router.get(
-    '/:id/follow',
-    logRequest({}),
-    validateRequest({ schema: idSchema, isParam: true }),
-    async (req, res, next) => {
-      const currentUserId = req.user._id;
-      try {
-        const result = await followRepository(currentUserId, req.params.id);
-        res.status(200).json({ result });
-      } catch (error) {
-        next(error);
-      }
-    }
-  );
-
-  router.post(
-    '/',
-    logRequest({}),
-    validateRequest({ schema: createSchema }),
-    async (req, res, next) => {
-      try {
-        const item = await create(req.body);
-        res.status(201).json(item);
-      } catch (error) {
-        next(error);
-      }
-    }
-  );
+  });
 
   router.get(
     '/:id',

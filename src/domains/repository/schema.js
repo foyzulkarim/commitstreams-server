@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 
-const RepositorySchema = new mongoose.Schema({
+const { baseSchema } = require('../../libraries/db/base-schema');
+
+const schema = new mongoose.Schema({
   id: { type: Number, unique: true },
   node_id: String,
   name: String,
@@ -44,4 +46,6 @@ const RepositorySchema = new mongoose.Schema({
   ],
 });
 
-module.exports = mongoose.model('Repository', RepositorySchema);
+schema.add(baseSchema);
+
+module.exports = mongoose.model('Repository', schema);

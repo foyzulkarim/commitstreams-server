@@ -27,6 +27,7 @@ const schema = Joi.object({
     .required(),
   SESSION_SECRET: Joi.string().required(),
   ENCRYPTION_KEY: Joi.string().required(),
+  ADMIN_USERNAMES: Joi.array().items(Joi.string()).required(),
 });
 
 module.exports = schema;

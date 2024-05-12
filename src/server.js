@@ -64,9 +64,40 @@ const createExpressApp = () => {
   expressApp.get('/api/auth/github', passport.authenticate('github'));
   expressApp.get(
     '/api/auth/github/callback',
-    passport.authenticate('github', {
-      failureRedirect: `${config.CLIENT_HOST}/login`,
-    }),
+    function (req, res, next) {
+      passport.authenticate(
+        'github',
+        {
+          failureRedirect: `${config.CLIENT_HOST}/login`,
+        },
+        (err, user, info, status) => {
+          if (err || !user) {
+            return res.redirect(
+              `${config.CLIENT_HOST}/login?error=${err.name}`
+            );
+          }
+          req.logIn(user, function (err) {
+            if (err) {
+              return res.redirect(
+                `${config.CLIENT_HOST}/login?error=failed-to-authenticate`
+              );
+            }
+
+            req.session.userId = user._id;
+            req.session.sessionId = req.sessionID;
+            req.session.save((err) => {
+              if (err) {
+                logger.error('Failed to save session', err);
+              } else {
+                logger.info('Session saved');
+              }
+            });
+
+            next();
+          });
+        }
+      )(req, res, next);
+    },
     function (req, res) {
       logger.info('/api/auth/github/callback', { username: req.user.username });
       // prepare the cookie here
@@ -92,7 +123,6 @@ const createExpressApp = () => {
   expressApp.get('/api/logout', async (req, res, next) => {
     const username = req.user?.username;
     const userId = req.user?._id;
-    console.log('Logging out user:', { user: req.user });
 
     req.logout(async function (err) {
       // Passport.js logout function

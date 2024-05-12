@@ -10,6 +10,8 @@ const {
   updateById,
   deleteById,
   followUser,
+  deactivateUser,
+  activateUser,
 } = require('./service');
 
 const {
@@ -20,6 +22,7 @@ const {
 } = require('./request');
 const { validateRequest } = require('../../middlewares/request-validate');
 const { logRequest } = require('../../middlewares/log');
+const { authorizeAdmin } = require('../../middlewares/authz');
 
 const model = 'User';
 
@@ -34,7 +37,6 @@ const routes = () => {
     validateRequest({ schema: searchSchema, isQuery: true }),
     async (req, res, next) => {
       try {
-        // TODO: Add pagination and filtering
         const items = await search(req.query);
         res.json(items);
       } catch (error) {
@@ -80,20 +82,6 @@ const routes = () => {
     }
   );
 
-  router.post(
-    '/',
-    logRequest({}),
-    validateRequest({ schema: createSchema }),
-    async (req, res, next) => {
-      try {
-        const item = await create(req.body);
-        res.status(201).json(item);
-      } catch (error) {
-        next(error);
-      }
-    }
-  );
-
   router.get(
     '/:id',
     logRequest({}),
@@ -111,32 +99,58 @@ const routes = () => {
     }
   );
 
-  router.put(
+  router.delete(
     '/:id',
     logRequest({}),
+    authorizeAdmin,
     validateRequest({ schema: idSchema, isParam: true }),
-    validateRequest({ schema: updateSchema }),
     async (req, res, next) => {
       try {
-        const item = await updateById(req.params.id, req.body);
-        if (!item) {
-          throw new AppError(`${model} not found`, `${model} not found`, 404);
-        }
-        res.status(200).json(item);
+        const deactivatedUser = await deactivateUser(req.params.id);
+        // remove the deactivated user's session from the session store
+        req.sessionStore.all((err, sessions = []) => {
+          // find the sessionId by userId
+          const session = sessions.find(
+            (session) => session.userId === deactivatedUser._id.toString()
+          );
+          const sessionId = session?.sessionId;
+          console.log('found sessionId', sessionId);
+
+          console.log('sessionId', sessionId);
+
+          if (sessionId) {
+            req.sessionStore.destroy(sessionId, (err) => {
+              console.log('destroy session');
+              if (err) {
+                logger.error('Failed to destroy session', err);
+              } else {
+                logger.info('Session destroyed');
+              }
+            });
+          }
+
+          res.status(200).json({
+            message: `${deactivatedUser.username} has been deactivated`,
+          });
+        });
       } catch (error) {
         next(error);
       }
     }
   );
 
-  router.delete(
-    '/:id',
+  // activateUser
+  router.post(
+    '/:id/activate',
     logRequest({}),
+    authorizeAdmin,
     validateRequest({ schema: idSchema, isParam: true }),
     async (req, res, next) => {
       try {
-        await deleteById(req.params.id);
-        res.status(204).json({ message: `model is deleted` });
+        const activatedUser = await activateUser(req.params.id);
+        res
+          .status(200)
+          .json({ message: `${activatedUser.username} has been activated` });
       } catch (error) {
         next(error);
       }
