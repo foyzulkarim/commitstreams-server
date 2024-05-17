@@ -3,6 +3,8 @@ const logger = require('./libraries/log/logger');
 const domainRoutes = require('./domains/index');
 const packageJson = require('../package.json');
 
+const auth = require('./middlewares/auth/authentication');
+
 function formatUptime(uptime) {
   const days = Math.floor(uptime / (24 * 60 * 60));
   const hours = Math.floor((uptime % (24 * 60 * 60)) / (60 * 60));
@@ -18,18 +20,8 @@ function defineRoutes(expressApp) {
 
   domainRoutes(router);
 
-  // Authentication Middleware
-  function isAuthenticated(req, res, next) {
-    if (req.isAuthenticated()) {
-      // Passport's built-in method
-      return next(); // User is authenticated, proceed
-    } else {
-      logger.warn('User is not authenticated');
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
-  }
-
-  expressApp.use('/api/v1', isAuthenticated, router);
+  // we need to call `auth.isAuthenticated` like this so that we can mock the auth module in tests
+  expressApp.use('/api/v1', auth.isAuthenticated, router);
   // health check
   expressApp.get('/health', (req, res) => {
     const healthCheck = {
