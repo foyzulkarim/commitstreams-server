@@ -6,8 +6,8 @@ name: Ubuntu server deploy
 on:
   push:
     branches: ['main']
-  # pull_request:
-  #   branches: ['main']
+  pull_request:
+    branches: ['main']
   workflow_dispatch:
 
 jobs:
@@ -20,7 +20,23 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Create config.test.json
+        run: echo '${{ secrets.CONFIG_TEST_JSON }}' > src/configs/config.test.json
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests
+        run: npm test
+
       - name: Deploy
+        if: github.event_name == 'push' && success()
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SERVER_IP }}
