@@ -33,12 +33,13 @@ const createExpressApp = () => {
 
   passport.use(getGitHubStrategy());
 
+  const sessionStore = MongoStore.create({ mongoUrl: config.MONGODB_URI }); // Store the reference
   expressApp.use(
     session({
       secret: config.SESSION_SECRET,
       resave: false,
       saveUninitialized: true,
-      store: MongoStore.create({ mongoUrl: config.MONGODB_URI }),
+      store: sessionStore,
     })
   );
 

@@ -1,6 +1,6 @@
 {
   "name": "nodejs-boilerplate",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)",
   "main": "index.js",
   "directories": {
@@ -16,7 +16,8 @@
     "stop:prod": "pm2 stop src/start.js",
     "logs:prod": "pm2 logs src/start.js",
     "restart:prod": "NODE_ENV=production pm2 restart src/start.js",
-    "create-domain": "zx scripts/dev/domain-generator.js"
+    "create-domain": "zx scripts/dev/domain-generator.js",
+    "bump-version": "npm version patch -m 'Bump version to %s'"
   },
   "keywords": [],
   "author": "",

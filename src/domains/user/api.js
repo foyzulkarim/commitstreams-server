@@ -22,7 +22,7 @@ const {
 } = require('./request');
 const { validateRequest } = require('../../middlewares/request-validate');
 const { logRequest } = require('../../middlewares/log');
-const { authorizeAdmin } = require('../../middlewares/authz');
+const { isAuthorized } = require('../../middlewares/auth/authorization');
 
 const model = 'User';
 
@@ -102,7 +102,7 @@ const routes = () => {
   router.delete(
     '/:id',
     logRequest({}),
-    authorizeAdmin,
+    isAuthorized,
     validateRequest({ schema: idSchema, isParam: true }),
     async (req, res, next) => {
       try {
@@ -143,7 +143,7 @@ const routes = () => {
   router.post(
     '/:id/activate',
     logRequest({}),
-    authorizeAdmin,
+    isAuthorized,
     validateRequest({ schema: idSchema, isParam: true }),
     async (req, res, next) => {
       try {

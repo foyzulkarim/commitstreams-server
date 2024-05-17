@@ -1,4 +1,7 @@
 const os = require('os');
+const fs = require('fs');
+const path = require('path');
+
 const { retrieveRequestId } = require('../../middlewares/request-context');
 const { createLogger, format, transports } = require('winston');
 const { Loggly } = require('winston-loggly-bulk');
@@ -50,16 +53,25 @@ class LogManager {
         })
       );
     }
-    const config = require('../../configs/config.production.json');
-    if (config?.LOGGLY_TOKEN) {
-      this.logger.add(
-        new Loggly({
-          token: config.LOGGLY_TOKEN,
-          subdomain: config.LOGGLY_SUBDOMAIN || 'foyzulk2023',
-          tags: [os.hostname(), argv.env],
-          json: true,
-        })
-      );
+    const configPath = path.resolve(
+      __dirname,
+      '../../configs/config.production.json'
+    );
+
+    if (fs.existsSync(configPath)) {
+      const config = require(configPath);
+      if (config?.LOGGLY_TOKEN) {
+        this.logger.add(
+          new Loggly({
+            token: config.LOGGLY_TOKEN,
+            subdomain: config.LOGGLY_SUBDOMAIN || 'foyzulk2023',
+            tags: [os.hostname(), argv.env],
+            json: true,
+          })
+        );
+      }
+    } else {
+      console.log('Production config file not found');
     }
   }
 

@@ -34,7 +34,13 @@ describe('App', () => {
     it('should return 200 for health endpoint', async () => {
       const response = await request(app).get('/health');
       expect(response.status).toBe(200);
-      expect(response.text).toBe('OK');
+      const health = JSON.parse(response.text);
+      expect(health).toHaveProperty('uptime');
+      expect(health).toHaveProperty('formattedUptime');
+      expect(health).toHaveProperty('message');
+      expect(health).toHaveProperty('timestamp');
+      expect(health).toHaveProperty('version');
+      expect(health.message).toBe('OK');
       expect(response.error).toBe(false);
     });
   });

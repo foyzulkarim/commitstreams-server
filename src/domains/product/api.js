@@ -13,6 +13,7 @@ const {
 const { createSchema, updateSchema, idSchema } = require('./request');
 const { validateRequest } = require('../../middlewares/request-validate');
 const { logRequest } = require('../../middlewares/log');
+const { isAuthorized } = require('../../middlewares/auth/authorization');
 
 const model = 'Product';
 
@@ -83,6 +84,7 @@ const routes = () => {
   router.delete(
     '/:id',
     logRequest({}),
+    isAuthorized,
     validateRequest({ schema: idSchema, isParam: true }),
     async (req, res, next) => {
       try {

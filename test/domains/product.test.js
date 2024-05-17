@@ -1,4 +1,5 @@
-// test unknown endpoints
+jest.mock('../../src/middlewares/auth/authentication');
+
 const request = require('supertest');
 const { createExpressApp } = require('../../src/server');
 
@@ -8,9 +9,15 @@ const {
   deleteById,
 } = require('../../src/domains/product/service');
 
+const Product = require('../../src/domains/product/schema');
+
 let app = null;
+let agent = null;
+
 beforeAll(async () => {
-  app = await createExpressApp();
+  app = createExpressApp();
+  const mockUser = { id: 123, email: 'test@example.com', isAdmin: false };
+  agent = request.agent(app).set('x-mock-user', JSON.stringify(mockUser));
 });
 afterAll(async () => {
   app = null;
@@ -23,19 +30,16 @@ afterAll(async () => {
 // Test API up and running
 describe('Domains.Products', () => {
   describe('API', () => {
-    const insertedIds = [];
-
     // clean up
     afterAll(async () => {
-      for (const id of insertedIds) {
-        await deleteById(id);
-      }
+      // delete all products
+      await Product.deleteMany({});
     });
 
     // GET /api/v1/products
     describe('GET /api/v1/products', () => {
       it('should return status 200 and a JSON response', async () => {
-        const response = await request(app).get('/api/v1/products');
+        const response = await agent.get('/api/v1/products');
         expect(response.status).toBe(200);
         expect(response.body).toEqual([]);
       });
@@ -44,7 +48,7 @@ describe('Domains.Products', () => {
     // POST /api/v1/products
     describe('POST /api/v1/products', () => {
       it('should return status 201 and a JSON response', async () => {
-        const response = await request(app).post('/api/v1/products').send({
+        const response = await agent.post('/api/v1/products').send({
           name: 'Sample Product',
           description: 'This is a sample product for demonstration purposes.',
           price: 19,
@@ -53,10 +57,9 @@ describe('Domains.Products', () => {
 
         expect(response.status).toBe(201);
         expect(response.body._id).not.toBeNull();
-        insertedIds.push(response.body._id);
 
         // fetch product from database
-        const productResponse = await request(app).get(
+        const productResponse = await agent.get(
           `/api/v1/products/${response.body._id}`
         );
         expect(productResponse.status).toBe(200);
@@ -64,7 +67,7 @@ describe('Domains.Products', () => {
       });
 
       it('should return status 400 if the request body is invalid', async () => {
-        const response = await request(app).post('/api/v1/products').send({
+        const response = await agent.post('/api/v1/products').send({
           name: 'Product without price',
         });
         expect(response.status).toBe(400);
@@ -74,17 +77,17 @@ describe('Domains.Products', () => {
     // GET /api/v1/products/:id
     describe('GET /api/v1/products/:id', () => {
       it('should return status 400 when id is not valid', async () => {
-        const response = await request(app).get('/api/v1/products/123');
+        const response = await agent.get('/api/v1/products/123');
         expect(response.status).toBe(400);
       });
 
       it('should return status 400 if the request params is invalid', async () => {
-        const response = await request(app).get('/api/v1/products/invalid-id');
+        const response = await agent.get('/api/v1/products/invalid-id');
         expect(response.status).toBe(400);
       });
       //id = 66123283c07ca0e7dcc37990
       it('should return status 404 if the product is not found', async () => {
-        const response = await request(app).get(
+        const response = await agent.get(
           '/api/v1/products/66123283c07ca0e7dcc37990'
         );
         expect(response.status).toBe(404);
@@ -94,24 +97,24 @@ describe('Domains.Products', () => {
     // PUT /api/v1/products/:id
     describe('PUT /api/v1/products/:id', () => {
       it('should return status 400 when id is not valid', async () => {
-        const response = await request(app).put('/api/v1/products/123');
+        const response = await agent.put('/api/v1/products/123');
         expect(response.status).toBe(400);
       });
 
       it('should return status 400 if the request params is invalid', async () => {
-        const response = await request(app).put('/api/v1/products/invalid-id');
+        const response = await agent.put('/api/v1/products/invalid-id');
         expect(response.status).toBe(400);
       });
 
       it('should return status 404 if the product is not found', async () => {
-        const response = await request(app).put(
+        const response = await agent.put(
           '/api/v1/products/66123283c07ca0e7dcc37990'
         );
         expect(response.status).toBe(404);
       });
 
       it('should return status 400 if the request body is invalid', async () => {
-        const response = await request(app)
+        const response = await agent
           .put('/api/v1/products/66123283c07ca0e7dcc37990')
           .send({
             _id: '66123283c07ca0e7dcc37990',
@@ -122,16 +125,14 @@ describe('Domains.Products', () => {
 
       // create and then update the product and then assert the response
       it('should return status 200 and a JSON response', async () => {
-        const createResponse = await request(app)
-          .post('/api/v1/products')
-          .send({
-            name: 'Sample Product',
-            description: 'This is a sample product for demonstration purposes.',
-            price: 19,
-            inStock: true,
-          });
+        const createResponse = await agent.post('/api/v1/products').send({
+          name: 'Sample Product',
+          description: 'This is a sample product for demonstration purposes.',
+          price: 19,
+          inStock: true,
+        });
 
-        const updateResponse = await request(app)
+        const updateResponse = await agent
           .put(`/api/v1/products/${createResponse.body._id}`)
           .send({
             name: 'Updated Product',
@@ -147,10 +148,8 @@ describe('Domains.Products', () => {
         expect(updateResponse.body.price).toBe(29);
         expect(updateResponse.body.inStock).toBe(false);
 
-        insertedIds.push(updateResponse.body._id);
-
         // fetch product from database via GET /products/:id
-        const productResponse = await request(app).get(
+        const productResponse = await agent.get(
           `/api/v1/products/${createResponse.body._id}`
         );
         expect(productResponse.status).toBe(200);
@@ -158,37 +157,52 @@ describe('Domains.Products', () => {
       });
     });
 
+    // DELETE /api/v1/products/:id authorization test
+    describe('DELETE /api/v1/products/:id authorization', () => {
+      it('should return status 403 when user is not an admin', async () => {
+        const normalUser = {
+          id: 123,
+          email: 'test@example.com',
+          isAdmin: false,
+        };
+        agent = agent.set('x-mock-user', JSON.stringify(normalUser));
+        const response = await agent.delete('/api/v1/products/123');
+        expect(response.status).toBe(403);
+      });
+    });
+
     // DELETE /api/v1/products/:id
     describe('DELETE /api/v1/products/:id', () => {
+      beforeAll(async () => {
+        const adminUser = { id: 123, email: 'test@example.com', isAdmin: true };
+        agent = agent.set('x-mock-user', JSON.stringify(adminUser));
+      });
+
       it('should return status 400 when id is not valid', async () => {
-        const response = await request(app).delete('/api/v1/products/123');
+        const response = await agent.delete('/api/v1/products/123');
         expect(response.status).toBe(400);
       });
 
       it('should return status 400 if the request params is invalid', async () => {
-        const response = await request(app).delete(
-          '/api/v1/products/invalid-id'
-        );
+        const response = await agent.delete('/api/v1/products/invalid-id');
         expect(response.status).toBe(400);
       });
 
       it('should return status 204 if the product is successfully deleted', async () => {
-        const createResponse = await request(app)
-          .post('/api/v1/products')
-          .send({
-            name: 'Sample Product',
-            description: 'This is a sample product for demonstration purposes.',
-            price: 19,
-            inStock: true,
-          });
+        const createResponse = await agent.post('/api/v1/products').send({
+          name: 'Sample Product',
+          description: 'This is a sample product for demonstration purposes.',
+          price: 19,
+          inStock: true,
+        });
 
-        const deleteResponse = await request(app).delete(
+        const deleteResponse = await agent.delete(
           `/api/v1/products/${createResponse.body._id}`
         );
         expect(deleteResponse.status).toBe(204);
 
         // fetch product from database via GET /products/:id
-        const productResponse = await request(app).get(
+        const productResponse = await agent.get(
           `/api/v1/products/${createResponse.body._id}`
         );
         expect(productResponse.status).toBe(404);
