@@ -29,6 +29,9 @@ jobs:
       - name: Create config.test.json
         run: echo '${{ secrets.CONFIG_TEST_JSON }}' > src/configs/config.test.json
 
+      - name: Create .env.test
+        run: echo '${{ '' }}' > src/.env.test
+
       - name: Install dependencies
         run: npm install
 
