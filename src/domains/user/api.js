@@ -99,6 +99,35 @@ const routes = () => {
     }
   );
 
+  const destroySession = async (deactivatedUser, sessionStore) => {
+    const result = await new Promise((resolve, reject) => {
+      sessionStore.all((err, sessions = []) => {
+        // find the sessionId by userId
+        const session = sessions.find(
+          (session) => session.userId === deactivatedUser?._id?.toString()
+        );
+        const sessionId = session?.sessionId;
+
+        if (sessionId) {
+          logger.info('destroySession(): sessionId', { sessionId });
+          sessionStore.destroy(sessionId, (err) => {
+            if (err) {
+              logger.error('Failed to destroy session', err);
+              reject(err);
+            } else {
+              logger.info('Session destroyed');
+              resolve(true);
+            }
+          });
+        } else {
+          logger.info('No session found to destroy');
+          resolve(true);
+        }
+      });
+    });
+    return result;
+  };
+
   router.delete(
     '/:id',
     logRequest({}),
@@ -108,30 +137,13 @@ const routes = () => {
       try {
         const deactivatedUser = await deactivateUser(req.params.id);
         // remove the deactivated user's session from the session store
-        req.sessionStore.all((err, sessions = []) => {
-          // find the sessionId by userId
-          const session = sessions.find(
-            (session) => session.userId === deactivatedUser._id.toString()
-          );
-          const sessionId = session?.sessionId;
-          console.log('found sessionId', sessionId);
-
-          console.log('sessionId', sessionId);
-
-          if (sessionId) {
-            req.sessionStore.destroy(sessionId, (err) => {
-              console.log('destroy session');
-              if (err) {
-                logger.error('Failed to destroy session', err);
-              } else {
-                logger.info('Session destroyed');
-              }
-            });
-          }
-
-          res.status(200).json({
-            message: `${deactivatedUser.username} has been deactivated`,
-          });
+        const result = await destroySession(deactivatedUser, req.sessionStore);
+        logger.info('delete() deactivate user result', {
+          result,
+          username: deactivatedUser.username,
+        });
+        res.status(200).json({
+          message: `${deactivatedUser.username} has been deactivated`,
         });
       } catch (error) {
         next(error);
