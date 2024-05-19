@@ -1,6 +1,6 @@
 {
   "name": "nodejs-boilerplate",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)",
   "main": "index.js",
   "directories": {
