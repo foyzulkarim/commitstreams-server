@@ -1,6 +1,7 @@
 const validator = require('validator');
 
 const logger = require('../../libraries/log/logger');
+const { ValidationError } = require('../../libraries/error-handling/AppError');
 
 function validateRequest({ schema, isParam = false, isQuery = false }) {
   return (req, res, next) => {
@@ -19,10 +20,10 @@ function validateRequest({ schema, isParam = false, isQuery = false }) {
       logger.error(`${req.method} ${req.originalUrl} Validation failed`, {
         errors: validationResult.error.details.map((detail) => detail.message),
       });
-      // Handle validation error
-      return res.status(400).json({
-        errors: validationResult.error.details.map((detail) => detail.message),
-      });
+      const messages = validationResult.error.details.map(
+        (detail) => detail.message
+      );
+      throw new ValidationError(messages);
     }
 
     // Attach validation result back to the original field
