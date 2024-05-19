@@ -34,7 +34,7 @@ const search = async (query) => {
         { description: { regex: keyword, options: 'i' } },
       ];
     }
-    const items = await Model.find(filter);
+    const items = await Model.find(filter).sort({ updated_at: -1 });
     logger.info('search(): filter and count', {
       filter,
       count: items.length,
@@ -150,9 +150,12 @@ const fetchGitHubPullRequests = async (user) => {
       const promises = mappedPullRequests.map(async (pullRequest) => {
         const dbPull = await Model.findOne({ id: pullRequest.id }).exec();
         if (dbPull) {
-          logger.info('fetchGitHubPullRequests(): Pull request already exists', {
-            id: dbPull._id,
-          });
+          logger.info(
+            'fetchGitHubPullRequests(): Pull request already exists',
+            {
+              id: dbPull._id,
+            }
+          );
           return dbPull;
         }
 
