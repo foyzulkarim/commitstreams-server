@@ -9,4 +9,10 @@ class AppError extends Error {
   }
 }
 
-module.exports = { AppError };
+class ValidationError extends AppError {
+  constructor(message, cause = null) {
+    super('ValidationError', message, 400, true, cause);
+  }
+}
+
+module.exports = { AppError, ValidationError };

@@ -1,4 +1,3 @@
-// import { MongoMemoryServer } from 'mongodb-memory-server';
 const { MongoMemoryServer } = require('mongodb-memory-server');
 
 module.exports = async function globalSetup() {

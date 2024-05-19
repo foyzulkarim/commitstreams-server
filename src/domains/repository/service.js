@@ -4,7 +4,7 @@ const Model = require('./schema');
 const User = require('../user/schema');
 const { AppError } = require('../../libraries/error-handling/AppError');
 
-const { fetchRepoDetails } = require('../../libraries/util/githubUtils');
+const github = require('../../libraries/util/githubUtils');
 const { decryptToken } = require('../../auth');
 
 const model = 'repository';
@@ -122,11 +122,15 @@ const searchOne = async (searchPayload) => {
 const getById = async (id) => {
   try {
     const item = await Model.findById(id);
-    logger.info(`getById(): ${model} fetched`, { id, _id: item._id });
+    logger.info(`getById(): ${model} fetched`, { id, _id: item?._id });
     return item;
   } catch (error) {
     logger.error(`getById(): Failed to get ${model}`, error);
-    throw new AppError(`Failed to get ${model}`, error.message);
+    throw new AppError(
+      `Failed to get ${model}`,
+      error.message,
+      error.HTTPStatus || 400
+    );
   }
 };
 
@@ -227,7 +231,7 @@ const fetchGitHubRepoDetails = async (owner, repo, user) => {
     const { accessToken, accessTokenIV } = dbUser;
     const token = decryptToken(accessToken, accessTokenIV);
 
-    const response = await fetchRepoDetails(owner, repo, token);
+    const response = await github.fetchRepoDetails(owner, repo, token);
     // check if the repository already exists in the database by id node_id
     // if it exists, update the repository details using mapSelectedGithubResponseToSchema
     // else create the repository using mapGithubResponseToSchema
@@ -269,7 +273,7 @@ const followRepository = async (followerId, repositoryId) => {
     const [repositoryUpdate, followerUserUpdate] = await Promise.all([
       // Update csFollowers of the repository
       Model.findByIdAndUpdate(repositoryId, {
-        $push: { csFollowers: { _id: followerId, date: Date.now() } }, 
+        $push: { csFollowers: { _id: followerId, date: Date.now() } },
       }),
 
       // Update csFollowingRepositories of the follower user

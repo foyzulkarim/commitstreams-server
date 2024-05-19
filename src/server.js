@@ -85,8 +85,10 @@ const createExpressApp = () => {
               );
             }
 
+            // modify the session
             req.session.userId = user._id;
             req.session.sessionId = req.sessionID;
+            // update the session
             req.session.save((err) => {
               if (err) {
                 logger.error('Failed to save session', err);

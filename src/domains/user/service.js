@@ -141,7 +141,10 @@ const getByGitHubId = async (id) => {
   try {
     const item = await Model.findOne({ githubId: id });
     return item;
-  } catch (error) {}
+  } catch (error) {
+    logger.error(`getByGitHubId(): Failed to get ${model} by githubId`, error);
+    throw new AppError(`Failed to get ${model} by githubId`, error.message);
+  }
 };
 
 const followUser = async (followerId, followedId) => {
