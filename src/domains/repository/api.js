@@ -31,6 +31,7 @@ const routes = () => {
   const router = express.Router();
   logger.info(`Setting up routes for ${model}`);
 
+  // '/search'
   router.get(
     '/search',
     logRequest({}),
@@ -46,6 +47,7 @@ const routes = () => {
     }
   );
 
+  // '/count',
   router.get(
     '/count',
     logRequest({}),
@@ -60,6 +62,7 @@ const routes = () => {
     }
   );
 
+  // '/search-one'
   router.post(
     '/search-one',
     logRequest({}),
@@ -75,7 +78,7 @@ const routes = () => {
     }
   );
 
-  // fetch repository details from GitHub API
+  // '/fetch-from-github' fetch repository details from GitHub API
   router.post(
     '/fetch-from-github',
     logRequest({}),
@@ -95,6 +98,7 @@ const routes = () => {
     }
   );
 
+  //'/:id/follow'
   router.get(
     '/:id/follow',
     logRequest({}),
@@ -110,20 +114,7 @@ const routes = () => {
     }
   );
 
-  router.post(
-    '/',
-    logRequest({}),
-    validateRequest({ schema: createSchema }),
-    async (req, res, next) => {
-      try {
-        const item = await create(req.body);
-        res.status(201).json(item);
-      } catch (error) {
-        next(error);
-      }
-    }
-  );
-
+  //'/:id',
   router.get(
     '/:id',
     logRequest({}),

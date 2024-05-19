@@ -44,22 +44,29 @@ const search = async (query) => {
 const getById = async (id) => {
   try {
     const item = await Model.findById(id);
+    if (!item) {
+      throw new AppError(`${model} not found`, `${model} not found`, 404);
+    }
     logger.info(`getById(): ${model} fetched`, { id });
     return item;
   } catch (error) {
     logger.error(`getById(): Failed to get ${model}`, error);
-    throw new AppError(`Failed to get ${model}`, error.message);
+    throw new AppError(`Failed to get ${model}`, error.message, error.HTTPStatus || 400);
   }
 };
 
 const updateById = async (id, data) => {
   try {
     const item = await Model.findByIdAndUpdate(id, data, { new: true });
+    if (!item) {
+      throw new AppError(`${model} not found`, `${model} not found`, 404);
+    }
+
     logger.info(`updateById(): ${model} updated`, { id });
     return item;
   } catch (error) {
     logger.error(`updateById(): Failed to update ${model}`, error);
-    throw new AppError(`Failed to update ${model}`, error.message);
+    throw new AppError(`Failed to update ${model}`, error.message, error.HTTPStatus || 400);
   }
 };
 

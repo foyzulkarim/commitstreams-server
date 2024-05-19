@@ -71,9 +71,6 @@ const routes = () => {
     async (req, res, next) => {
       try {
         const item = await updateById(req.params.id, req.body);
-        if (!item) {
-          throw new AppError(`${model} not found`, `${model} not found`, 404);
-        }
         res.status(200).json(item);
       } catch (error) {
         next(error);
