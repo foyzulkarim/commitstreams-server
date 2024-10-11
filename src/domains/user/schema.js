@@ -5,14 +5,15 @@ const schema = new mongoose.Schema({
   // id
   githubId: {
     type: String,
-    required: true,
+    required: false,
   },
   nodeId: {
     type: String,
-    required: true,
+    required: false,
   },
   displayName: {
     type: String,
+    required: false,
   },
   username: {
     type: String,
@@ -21,7 +22,11 @@ const schema = new mongoose.Schema({
   },
   profileUrl: {
     type: String,
-    required: true,
+    required: false,
+  },
+  password: {
+    type: String,
+    required: false,
   },
 
   /* _json */
@@ -30,7 +35,7 @@ const schema = new mongoose.Schema({
   },
   apiUrl: {
     type: String,
-    required: true,
+    required: false,
   },
   company: {
     type: String,

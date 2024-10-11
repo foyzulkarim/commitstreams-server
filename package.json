@@ -24,6 +24,7 @@
   "license": "ISC",
   "dependencies": {
     "@octokit/rest": "^20.1.1",
+    "bcrypt": "^5.1.1",
     "compression": "^1.7.4",
     "connect-mongo": "^5.1.0",
     "cookie-parser": "^1.4.6",
@@ -42,6 +43,7 @@
     "octokit": "^3.2.1",
     "passport": "^0.7.0",
     "passport-github2": "^0.1.12",
+    "passport-local": "^1.0.0",
     "pm2": "^5.3.1",
     "short-uuid": "^5.2.0",
     "ulid": "^2.3.0",
