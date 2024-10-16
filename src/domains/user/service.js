@@ -147,6 +147,26 @@ const getByGitHubId = async (id) => {
   }
 };
 
+const getByUsername = async (username) => {
+  try {
+    const item = await Model.findOne({ username });
+    return item;
+  } catch (error) {
+    logger.error(`getByUsername(): Failed to get ${model} by username`, error);
+    throw new AppError(`Failed to get ${model} by username`, error.message);
+  }
+};
+
+const getByEmail = async (email) => {
+  try {
+    const item = await Model.findOne({ email });
+    return item;
+  } catch (error) {
+    logger.error(`getByEmail(): Failed to get ${model} by email`, error);
+    throw new AppError(`Failed to get ${model} by email`, error.message);
+  }
+};
+
 const followUser = async (followerId, followedId) => {
   try {
     // Check existing following status (Optimized)
@@ -177,7 +197,6 @@ const followUser = async (followerId, followedId) => {
 
     logger.info(`followUser(): success`, {
       followedId,
-      followedId,
       followedUserUpdate,
       followerUserUpdate,
     });
@@ -196,7 +215,9 @@ module.exports = {
   updateById,
   deleteById,
   getByGitHubId,
+  getByUsername,
   followUser,
   deactivateUser,
   activateUser,
+  getByEmail,
 };

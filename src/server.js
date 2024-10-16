@@ -3,6 +3,7 @@ const express = require('express');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
+const bcrypt = require('bcrypt');
 
 const passport = require('passport');
 const session = require('express-session');
@@ -13,7 +14,12 @@ const { errorHandler } = require('./libraries/error-handling');
 const logger = require('./libraries/log/logger');
 const { addRequestIdMiddleware } = require('./middlewares/request-context');
 const { connectWithMongoDb } = require('./libraries/db');
-const { getGitHubStrategy, clearAuthInfo } = require('./auth');
+const {
+  getGitHubStrategy,
+  clearAuthInfo,
+  localStrategy,
+  registerUser,
+} = require('./auth');
 
 let connection;
 
@@ -31,6 +37,7 @@ const createExpressApp = () => {
     })
   );
 
+  passport.use(localStrategy);
   passport.use(getGitHubStrategy());
 
   const sessionStore = MongoStore.create({ mongoUrl: config.MONGODB_URI }); // Store the reference
@@ -124,6 +131,43 @@ const createExpressApp = () => {
     const { accessToken, accessTokenIV, ...user } = req.user;
     res.json(user);
   });
+
+  expressApp.post('/api/register', async (req, res, next) => {
+    try {
+      const { email, password } = req.body;
+      const newUser = await registerUser({ email, password });
+      res
+        .status(201)
+        .json({ message: 'User registered successfully', userId: newUser._id });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  expressApp.post('/api/login', (req, res, next) => {
+    passport.authenticate('local', (err, user, info) => {
+      logger.info('Login attempt', { err, user, info });
+      if (err) {
+        return next(err);
+      }
+      if (!user) {
+        return res
+          .status(401)
+          .json({ message: info.message || 'Authentication failed' });
+      }
+      req.logIn(user, (err) => {
+        if (err) {
+          return next(err);
+        }
+        const { password, ...userWithoutPassword } = user;
+        return res.json({
+          message: 'Login successful',
+          user: userWithoutPassword,
+        });
+      });
+    })(req, res, next);
+  });
+
   expressApp.get('/api/logout', async (req, res, next) => {
     const username = req.user?.username;
     const userId = req.user?._id;
