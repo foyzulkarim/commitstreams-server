@@ -6,7 +6,10 @@ const {
   getOrCreateUserFromGitHubProfile,
 } = require('./githubStrategy');
 const { localStrategy, registerUser } = require('./localStrategy');
-
+const {
+  getGoogleStrategy,
+  getOrCreateUserFromGoogleProfile,
+} = require('./googleStrategy');
 // clear the accessToken value from database after logout
 const clearAuthInfo = async (userId) => {
   return await updateById(userId, {
@@ -24,4 +27,6 @@ module.exports = {
   decryptToken,
   localStrategy,
   registerUser,
+  getGoogleStrategy,
+  getOrCreateUserFromGoogleProfile,
 };

@@ -35,34 +35,39 @@ const getGitHubStrategy = () => {
 
 async function getOrCreateUserFromGitHubProfile({ profile, accessToken }) {
   const isAdmin = config.ADMIN_USERNAMES.includes(profile.username);
-  // Create a new user from GitHub API Profile data
+  
+  // Restructured payload to match new schema
   const payload = {
-    githubId: profile.id,
-    nodeId: profile.nodeId,
-    displayName: profile.displayName,
-    username: profile.username,
-    profileUrl: profile.profileUrl,
-
-    avatarUrl: profile._json.avatar_url,
-    apiUrl: profile._json.url,
-    company: profile._json.company,
-    blog: profile._json.blog,
-    location: profile._json.location,
     email: profile._json.email,
-    hireable: profile._json.hireable,
-    bio: profile._json.bio,
-    public_repos: profile._json.public_repos,
-    public_gists: profile._json.public_gists,
-    followers: profile._json.followers,
-    following: profile._json.following,
-    created_at: profile._json.created_at,
-    updated_at: profile._json.updated_at,
+    displayName: profile.displayName,
+    authType: 'github',
+    
+    // GitHub specific data moved to github subdocument
+    github: {
+      id: profile.id,
+      nodeId: profile.nodeId,
+      profileUrl: profile.profileUrl,
+      avatarUrl: profile._json.avatar_url,
+      apiUrl: profile._json.url,
+      company: profile._json.company,
+      blog: profile._json.blog,
+      location: profile._json.location,
+      hireable: profile._json.hireable,
+      bio: profile._json.bio,
+      public_repos: profile._json.public_repos,
+      public_gists: profile._json.public_gists,
+      followers: profile._json.followers,
+      following: profile._json.following,
+      created_at: profile._json.created_at,
+      updated_at: profile._json.updated_at,
+    },
 
     isDemo: false,
     isVerified: true,
     isAdmin,
   };
 
+  // Update query to use github.id instead of githubId
   let user = await getByGitHubId(profile.id);
 
   const tokenInfo = encryptToken(accessToken);
@@ -72,9 +77,13 @@ async function getOrCreateUserFromGitHubProfile({ profile, accessToken }) {
     }
 
     // Update the user with the latest data
+    // Note: Using spread to maintain other fields while updating github subdocument
     user = Object.assign(user, payload, {
-      accessToken: tokenInfo.token,
-      accessTokenIV: tokenInfo.iv,
+      github: {
+        ...payload.github,
+        accessToken: tokenInfo.token,
+        accessTokenIV: tokenInfo.iv,
+      },
       updatedAt: new Date(),
     });
     await updateById(user._id, user);
@@ -82,23 +91,25 @@ async function getOrCreateUserFromGitHubProfile({ profile, accessToken }) {
     // Create a new user
     user = await create({
       ...payload,
-      accessToken: tokenInfo.token,
-      accessTokenIV: tokenInfo.iv,
+      github: {
+        ...payload.github,
+        accessToken: tokenInfo.token,
+        accessTokenIV: tokenInfo.iv,
+      },
     });
   }
+
   const userObj = user.toObject();
   const trimmedPayloadForSession = {
     _id: userObj._id,
-    githubId: userObj.githubId,
-    nodeId: userObj.nodeId,
+    email: userObj.email,
+    authType: userObj.authType,
     isAdmin: userObj.isAdmin,
     isDeactivated: userObj.isDeactivated,
     isDemo: userObj.isDemo,
     // UI info
-    username: userObj.username,
     displayName: userObj.displayName,
-    avatarUrl: userObj.avatarUrl,
-    email: userObj.email,
+    avatarUrl: userObj.github.avatarUrl,
   };
   return trimmedPayloadForSession;
 }

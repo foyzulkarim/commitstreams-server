@@ -6,17 +6,14 @@ const { AppError } = require('../../libraries/error-handling/AppError');
 const model = 'user';
 const projection = { accessToken: 0, accessTokenIV: 0 };
 
-const create = async (data) => {
+const create = async (userData) => {
   try {
-    const item = new Model(data);
-    const saved = await item.save();
-    logger.info(`create(): ${model} created`, {
-      id: saved._id,
-    });
-    return saved;
+    const user = new Model(userData);
+    await user.validate(); // This will check schema validation
+    return await user.save();
   } catch (error) {
-    logger.error(`create(): Failed to create ${model}`, error);
-    throw new AppError(`Failed to create ${model}`, error.message);
+    console.error('User creation error:', error);
+    throw error;
   }
 };
 
@@ -137,14 +134,13 @@ const activateUser = async (id) => {
   }
 };
 
-const getByGitHubId = async (id) => {
-  try {
-    const item = await Model.findOne({ githubId: id });
-    return item;
-  } catch (error) {
-    logger.error(`getByGitHubId(): Failed to get ${model} by githubId`, error);
-    throw new AppError(`Failed to get ${model} by githubId`, error.message);
-  }
+const getByGitHubId = async (githubId) => {
+  return await Model.findOne({ 'github.id': githubId });
+};
+
+// Add this new function
+const getByGoogleId = async (googleId) => {
+  return await Model.findOne({ 'google.id': googleId });
 };
 
 const getByUsername = async (username) => {
@@ -220,4 +216,5 @@ module.exports = {
   deactivateUser,
   activateUser,
   getByEmail,
+  getByGoogleId,
 };

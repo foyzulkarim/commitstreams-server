@@ -1,28 +1,37 @@
 const LocalStrategy = require('passport-local').Strategy;
 const bcrypt = require('bcrypt');
-const { getByUsername, getByEmail, create } = require('../domains/user/service');
+const {
+  getByUsername,
+  getByEmail,
+  create,
+} = require('../domains/user/service');
 const { AppError } = require('../libraries/error-handling/AppError');
 
 const verifyCallback = async (username, password, done) => {
   try {
-    const user = await getByUsername(username);
+    // Find user by email (since we're using email as username)
+    const user = await getByEmail(username);
+    
     if (!user) {
-      return done(null, false, { message: 'Incorrect username.' });
+      return done(null, false, { message: 'Incorrect email.' });
     }
-    console.log('user', user);
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-    const isValidPassword = await bcrypt.compare(password, user.password);
 
-    console.log(
-      'user',
-      password,
-      user.password,
-      hashedPassword,
-      isValidPassword
-    );
+    // Verify this is a local auth user
+    if (user.authType !== 'local') {
+      return done(null, false, { 
+        message: `Please use ${user.authType} authentication for this account.` 
+      });
+    }
+
+    // Verify password
+    const isValidPassword = await bcrypt.compare(password, user.local.password);
     if (!isValidPassword) {
       return done(null, false, { message: 'Incorrect password.' });
+    }
+
+    // Check if user is deactivated
+    if (user.isDeactivated) {
+      return done(null, false, { message: 'Account is deactivated.' });
     }
 
     return done(null, user);
@@ -33,7 +42,6 @@ const verifyCallback = async (username, password, done) => {
 
 const registerUser = async ({ email, password }) => {
   try {
-    console.log('registerUser', email, password);
     // Check if user already exists
     const existingUser = await getByEmail(email);
     if (existingUser) {
@@ -44,12 +52,15 @@ const registerUser = async ({ email, password }) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create user payload
+    // Create user payload matching new schema structure
     const payload = {
       email,
-      username: email,
-      password: hashedPassword,
       displayName: email,
+      authType: 'local', // Specify auth type
+      local: {
+        username: email,
+        password: hashedPassword,
+      },
       isDemo: false,
       isVerified: false,
       isAdmin: false,
@@ -62,10 +73,11 @@ const registerUser = async ({ email, password }) => {
     const userObj = newUser.toObject();
     const trimmedPayloadForSession = {
       _id: userObj._id,
+      email: userObj.email,
+      authType: userObj.authType,
       isAdmin: userObj.isAdmin,
       isDeactivated: userObj.isDeactivated,
       isDemo: userObj.isDemo,
-      username: userObj.username,
       displayName: userObj.displayName,
     };
 
