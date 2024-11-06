@@ -1,23 +1,28 @@
 const config = require('../configs');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const { AppError } = require('../libraries/error-handling/AppError');
-const { getByGoogleId, create, updateById } = require('../domains/user/service');
+const {
+  getByGoogleId,
+  create,
+  updateById,
+} = require('../domains/user/service');
 
 const getGoogleStrategy = () => {
-  console.log('config', config);
   return new GoogleStrategy(
     {
       clientID: config.GOOGLE_CLIENT_ID,
       clientSecret: config.GOOGLE_CLIENT_SECRET,
       callbackURL: `${config.HOST}/api/auth/google/callback`,
-      scope: ['profile', 'email']
+      scope: ['profile', 'email'],
     },
     async (accessToken, refreshToken, profile, cb) => {
       try {
-        const trimmedPayloadForSession = await getOrCreateUserFromGoogleProfile({
-          profile,
-          accessToken,
-        });
+        const trimmedPayloadForSession = await getOrCreateUserFromGoogleProfile(
+          {
+            profile,
+            accessToken,
+          }
+        );
         cb(null, trimmedPayloadForSession);
       } catch (error) {
         cb(error, null);
@@ -28,12 +33,12 @@ const getGoogleStrategy = () => {
 
 async function getOrCreateUserFromGoogleProfile({ profile, accessToken }) {
   const isAdmin = config.ADMIN_USERNAMES.includes(profile.emails[0].value);
-  
+
   const payload = {
     email: profile.emails[0].value,
     displayName: profile.displayName,
     authType: 'google',
-    
+
     google: {
       id: profile.id,
       email: profile.emails[0].value,

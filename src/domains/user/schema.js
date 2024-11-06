@@ -150,15 +150,6 @@ schema.pre('save', function (next) {
     );
   });
 
-  // Debug logging
-  console.log('Auth check:', {
-    authType: this.authType,
-    populatedMethods,
-    githubData: this.github,
-    localData: this.local,
-    googleData: this.google,
-  });
-
   // Validation
   if (!this.authType || !authMethods.includes(this.authType)) {
     return next(new Error('Invalid auth type'));

@@ -38,7 +38,6 @@ const createExpressApp = () => {
     })
   );
 
-  console.log('config', config);
   passport.use(localStrategy);
   passport.use(getGitHubStrategy());
   passport.use(getGoogleStrategy());
