@@ -19,9 +19,64 @@ const {
   clearAuthInfo,
   localStrategy,
   registerUser,
+  getGoogleStrategy,
 } = require('./auth');
 
 let connection;
+
+const handleAuthCallback = (strategy) => {
+  return [
+    function (req, res, next) {
+      passport.authenticate(
+        strategy,
+        {
+          failureRedirect: `${config.CLIENT_HOST}/login`,
+        },
+        (err, user, info, status) => {
+          if (err || !user) {
+            logger.error('Failed to authenticate user', err);
+            return res.redirect(
+              `${config.CLIENT_HOST}/login?error=${err?.name}`
+            );
+          }
+          req.logIn(user, function (err) {
+            if (err) {
+              return res.redirect(
+                `${config.CLIENT_HOST}/login?error=failed-to-authenticate`
+              );
+            }
+
+            req.session.userId = user._id;
+            req.session.sessionId = req.sessionID;
+            req.session.save((err) => {
+              if (err) {
+                logger.error('Failed to save session', err);
+              } else {
+                logger.info('Session saved');
+              }
+            });
+
+            next();
+          });
+        }
+      )(req, res, next);
+    },
+    function (req, res) {
+      if (strategy === 'github') {
+        logger.info('/api/auth/github/callback', {
+          username: req.user.username,
+        });
+      }
+      const userId = req.user._id.toString();
+      res.cookie('userId', userId, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'lax',
+      });
+      res.redirect(`${config.CLIENT_HOST}/login-success`);
+    },
+  ];
+};
 
 const createExpressApp = () => {
   const expressApp = express();
@@ -39,6 +94,7 @@ const createExpressApp = () => {
 
   passport.use(localStrategy);
   passport.use(getGitHubStrategy());
+  passport.use(getGoogleStrategy());
 
   const sessionStore = MongoStore.create({ mongoUrl: config.MONGODB_URI }); // Store the reference
   expressApp.use(
@@ -69,60 +125,16 @@ const createExpressApp = () => {
 
   logger.info('Express middlewares are set up');
 
+  // Github authentication
   expressApp.get('/api/auth/github', passport.authenticate('github'));
-  expressApp.get(
-    '/api/auth/github/callback',
-    function (req, res, next) {
-      passport.authenticate(
-        'github',
-        {
-          failureRedirect: `${config.CLIENT_HOST}/login`,
-        },
-        (err, user, info, status) => {
-          if (err || !user) {
-            logger.error('Failed to authenticate user', err);
-            return res.redirect(
-              `${config.CLIENT_HOST}/login?error=${err?.name}`
-            );
-          }
-          req.logIn(user, function (err) {
-            if (err) {
-              return res.redirect(
-                `${config.CLIENT_HOST}/login?error=failed-to-authenticate`
-              );
-            }
 
-            // modify the session
-            req.session.userId = user._id;
-            req.session.sessionId = req.sessionID;
-            // update the session
-            req.session.save((err) => {
-              if (err) {
-                logger.error('Failed to save session', err);
-              } else {
-                logger.info('Session saved');
-              }
-            });
+  // Replace the GitHub callback route with:
+  expressApp.get('/api/auth/github/callback', ...handleAuthCallback('github'));
 
-            next();
-          });
-        }
-      )(req, res, next);
-    },
-    function (req, res) {
-      logger.info('/api/auth/github/callback', { username: req.user.username });
-      // prepare the cookie here
-      const userId = req.user._id.toString();
+  // Replace the Google callback route with:
+  expressApp.get('/api/auth/google/callback', ...handleAuthCallback('google'));
 
-      res.cookie('userId', userId, {
-        httpOnly: true,
-        secure: true, // Use secure in production (HTTPS)
-        sameSite: 'lax', // Adjust depending on deployment
-      });
-      // Successful authentication, redirect home.
-      res.redirect(`${config.CLIENT_HOST}/login-success`);
-    }
-  );
+  // Google authentication
   // get current logged in user data from req.user object
   expressApp.get('/api/user', (req, res) => {
     if (!req.user) {
@@ -155,14 +167,26 @@ const createExpressApp = () => {
           .status(401)
           .json({ message: info.message || 'Authentication failed' });
       }
+
       req.logIn(user, (err) => {
         if (err) {
           return next(err);
         }
-        const { password, ...userWithoutPassword } = user;
+
+        // Create a sanitized user object for the client
+        const trimmedPayloadForSession = {
+          _id: user._id,
+          email: user.email,
+          authType: user.authType,
+          displayName: user.displayName,
+          isAdmin: user.isAdmin,
+          isDeactivated: user.isDeactivated,
+          isDemo: user.isDemo,
+        };
+
         return res.json({
           message: 'Login successful',
-          user: userWithoutPassword,
+          user: trimmedPayloadForSession,
         });
       });
     })(req, res, next);
@@ -201,6 +225,12 @@ const createExpressApp = () => {
       res.redirect(`${config.CLIENT_HOST}/login`);
     });
   });
+
+  // Add Google auth routes
+  expressApp.get(
+    '/api/auth/google',
+    passport.authenticate('google', { scope: ['profile', 'email'] })
+  );
 
   defineRoutes(expressApp);
   defineErrorHandlingMiddleware(expressApp);

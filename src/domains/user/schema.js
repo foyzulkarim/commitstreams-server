@@ -2,77 +2,93 @@ const mongoose = require('mongoose');
 const { baseSchema } = require('../../libraries/db/base-schema');
 
 const schema = new mongoose.Schema({
-  // id
-  githubId: {
+  // Core user fields
+  email: {
     type: String,
-    required: false,
-  },
-  nodeId: {
-    type: String,
-    required: false,
+    required: true,
+    unique: true,
+    lowercase: true,
+    trim: true,
   },
   displayName: {
     type: String,
     required: false,
   },
-  username: {
+
+  // Auth type identifier
+  authType: {
     type: String,
     required: true,
-    unique: true,
-  },
-  profileUrl: {
-    type: String,
-    required: false,
-  },
-  password: {
-    type: String,
-    required: false,
+    enum: ['local', 'google', 'github'],
   },
 
-  /* _json */
-  avatarUrl: {
-    type: String,
+  // Auth-specific fields
+  local: {
+    username: {
+      type: String,
+      sparse: true,
+    },
+    password: {
+      type: String,
+    },
   },
-  apiUrl: {
-    type: String,
-    required: false,
-  },
-  company: {
-    type: String,
-  },
-  blog: {
-    type: String,
-  },
-  location: {
-    type: String,
-  },
-  email: {
-    type: String,
-  },
-  hireable: {
-    type: Boolean,
-  },
-  bio: {
-    type: String,
-  },
-  public_repos: {
-    type: Number,
-  },
-  public_gists: {
-    type: Number,
-  },
-  followers: { type: Number },
-  following: { type: Number },
-  created_at: { type: Date },
-  updated_at: { type: Date },
 
-  // auth
-  accessToken: {
-    type: String,
+  google: {
+    id: { type: String },
+    email: { type: String },
+    picture: { type: String },
   },
-  accessTokenIV: {
-    type: String,
+
+  github: {
+    id: {
+      type: String,
+    },
+    nodeId: {
+      type: String,
+    },
+    profileUrl: {
+      type: String,
+    },
+    avatarUrl: {
+      type: String,
+    },
+    apiUrl: {
+      type: String,
+    },
+    company: {
+      type: String,
+    },
+    blog: {
+      type: String,
+    },
+    location: {
+      type: String,
+    },
+    hireable: {
+      type: Boolean,
+    },
+    bio: {
+      type: String,
+    },
+    public_repos: {
+      type: Number,
+    },
+    public_gists: {
+      type: Number,
+    },
+    followers: { type: Number },
+    following: { type: Number },
+    created_at: { type: Date },
+    updated_at: { type: Date },
+    accessToken: {
+      type: String,
+    },
+    accessTokenIV: {
+      type: String,
+    },
   },
+
+  // Auth and status flags
   isDemo: {
     type: Boolean,
     default: false,
@@ -90,7 +106,7 @@ const schema = new mongoose.Schema({
     default: false,
   },
 
-  // commitstreams related similar properties
+  // Commitstreams related
   csFollowers: [
     {
       _id: { type: mongoose.Schema.Types.ObjectId },
@@ -112,5 +128,50 @@ const schema = new mongoose.Schema({
 });
 
 schema.add(baseSchema);
+
+// Current problematic logic
+schema.pre('save', function (next) {
+  const authMethods = ['local', 'google', 'github'];
+
+  // Better check for populated methods
+  const populatedMethods = authMethods.filter((method) => {
+    const authData = this[method];
+    // Check if the auth data exists and has actual values
+    return (
+      authData &&
+      typeof authData === 'object' &&
+      Object.values(authData).some((value) => {
+        // Improved value checking
+        if (typeof value === 'object') {
+          return value !== null && Object.keys(value).length > 0;
+        }
+        return value !== null && value !== undefined && value !== '';
+      })
+    );
+  });
+
+  // Validation
+  if (!this.authType || !authMethods.includes(this.authType)) {
+    return next(new Error('Invalid auth type'));
+  }
+
+  // Verify that only the specified auth type has data
+  if (!this[this.authType]) {
+    return next(new Error(`Missing data for auth type: ${this.authType}`));
+  }
+
+  // Check for multiple auth methods
+  if (populatedMethods.length > 1) {
+    return next(new Error('Multiple auth methods detected'));
+  }
+
+  next();
+});
+
+// Add unique indexes for auth provider IDs
+schema.index({ 'github.id': 1 }, { unique: true, sparse: true });
+schema.index({ 'google.id': 1 }, { unique: true, sparse: true });
+schema.index({ 'local.username': 1 }, { unique: true, sparse: true });
+schema.index({ email: 1 }, { unique: true });
 
 module.exports = mongoose.model('User', schema);
