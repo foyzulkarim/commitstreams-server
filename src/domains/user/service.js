@@ -24,7 +24,7 @@ const search = async (query) => {
     const {
       keyword,
       page = 0,
-      orderBy = 'username',
+      orderBy = 'displayName',
       order = 'asc',
     } = query ?? {};
 
@@ -32,7 +32,7 @@ const search = async (query) => {
     if (keyword) {
       // like search on multiple fields with keyword
       filter.$or = [
-        { username: { $regex: keyword, $options: 'i' } },
+        { email: { $regex: keyword, $options: 'i' } },
         { displayName: { $regex: keyword, $options: 'i' } },
       ];
     }
