@@ -63,7 +63,7 @@ const count = async (query) => {
     if (keyword) {
       // like search on multiple fields with keyword
       filter.$or = [
-        { username: { $regex: keyword, $options: 'i' } },
+        { email: { $regex: keyword, $options: 'i' } },
         { displayName: { $regex: keyword, $options: 'i' } },
       ];
     }
