@@ -12,6 +12,18 @@ const schema = new mongoose.Schema({
   displayName: {
     type: String,
     required: true,
+  },
+  description: {
+    type: String,
+    default: '',
+  },
+  permissions: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Permission'
+  }],
+  isSystem: {
+    type: Boolean,
+    default: false  // To mark system-level roles like 'superadmin'
   }
 });
 

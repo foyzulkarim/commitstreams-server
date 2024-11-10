@@ -3,12 +3,32 @@ const mongoose = require('mongoose');
 
 const createSchema = Joi.object().keys({
   name: Joi.string().required(),
-  displayName: Joi.string().required()
+  displayName: Joi.string().required(),
+  description: Joi.string().allow('').optional(),
+  permissions: Joi.array().items(
+    Joi.string().custom((value, helpers) => {
+      if (!mongoose.Types.ObjectId.isValid(value)) {
+        return helpers.error('any.invalid');
+      }
+      return value;
+    }, 'ObjectId validation')
+  ).optional(),
+  isSystem: Joi.boolean().default(false)
 });
 
 const updateSchema = Joi.object().keys({
   name: Joi.string(),
-  displayName: Joi.string()
+  displayName: Joi.string(),
+  description: Joi.string().allow(''),
+  permissions: Joi.array().items(
+    Joi.string().custom((value, helpers) => {
+      if (!mongoose.Types.ObjectId.isValid(value)) {
+        return helpers.error('any.invalid');
+      }
+      return value;
+    }, 'ObjectId validation')
+  ),
+  isSystem: Joi.boolean()
 });
 
 const idSchema = Joi.object().keys({
