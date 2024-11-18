@@ -2,7 +2,7 @@ const logger = require('../../libraries/log/logger');
 const Model = require('./schema');
 const { AppError } = require('../../libraries/error-handling/AppError');
 
-const model = 'role';
+const model = 'resource';
 
 const create = async (data) => {
   try {
@@ -27,6 +27,7 @@ const search = async (query) => {
       page = 0,
       orderBy = 'name',
       order = 'asc',
+      type
     } = query ?? {};
 
     const filter = {};
@@ -34,7 +35,11 @@ const search = async (query) => {
       filter.$or = [
         { name: { $regex: keyword, $options: 'i' } },
         { displayName: { $regex: keyword, $options: 'i' } },
+        { identifier: { $regex: keyword, $options: 'i' } }
       ];
+    }
+    if (type) {
+      filter.type = type;
     }
 
     const items = await Model.find(filter)
@@ -55,13 +60,17 @@ const search = async (query) => {
 
 const count = async (query) => {
   try {
-    const { keyword } = query ?? {};
+    const { keyword, type } = query ?? {};
     const filter = {};
     if (keyword) {
       filter.$or = [
         { name: { $regex: keyword, $options: 'i' } },
         { displayName: { $regex: keyword, $options: 'i' } },
+        { identifier: { $regex: keyword, $options: 'i' } }
       ];
+    }
+    if (type) {
+      filter.type = type;
     }
     const total = await Model.countDocuments(filter);
     logger.info('count(): filter and count', {
@@ -108,26 +117,32 @@ const deleteById = async (id) => {
   }
 };
 
-const updateRolePermissions = async (roleId, permissions) => {
+const getAllGroupedByType = async () => {
   try {
-    const role = await Model.findById(roleId);
-    if (!role) {
-      throw new AppError(`${model} not found`, `${model} not found`, 404);
-    }
+    const resources = await Model.find({})
+      .sort({ type: 1, displayName: 1 })
+      .lean();
 
-    // Convert plain object to Map
-    role.permissions = new Map(Object.entries(permissions));
-    
-    const updated = await role.save();
-    logger.info(`updateRolePermissions(): ${model} permissions updated`, {
-      id: roleId,
-      permissionCount: Object.keys(permissions).length
-    });
-    
-    return updated;
+    // Group resources by type
+    const grouped = resources.reduce((acc, resource) => {
+      if (!acc[resource.type]) {
+        acc[resource.type] = [];
+      }
+      acc[resource.type].push({
+        id: resource._id,
+        name: resource.name,
+        displayName: resource.displayName,
+        description: resource.description,
+        identifier: resource.identifier
+      });
+      return acc;
+    }, {});
+
+    logger.info('getAllGroupedByType(): Resources fetched and grouped');
+    return grouped;
   } catch (error) {
-    logger.error(`updateRolePermissions(): Failed to update ${model} permissions`, error);
-    throw new AppError(`Failed to update ${model} permissions`, error.message);
+    logger.error('getAllGroupedByType(): Failed to fetch resources', error);
+    throw new AppError('Failed to fetch resources', error.message, 400);
   }
 };
 
@@ -138,5 +153,5 @@ module.exports = {
   getById,
   updateById,
   deleteById,
-  updateRolePermissions,
+  getAllGroupedByType,
 };
