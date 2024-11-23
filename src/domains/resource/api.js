@@ -1,5 +1,4 @@
 const express = require('express');
-const Joi = require('joi');
 const logger = require('../../libraries/log/logger');
 const { AppError } = require('../../libraries/error-handling/AppError');
 
@@ -10,8 +9,6 @@ const {
   getById,
   updateById,
   deleteById,
-  getAllGroupedByType,
-  updateRolePermissions,
 } = require('./service');
 
 const {
@@ -24,7 +21,7 @@ const { validateRequest } = require('../../middlewares/request-validate');
 const { logRequest } = require('../../middlewares/log');
 const { isAuthorized } = require('../../middlewares/auth/authorization');
 
-const model = 'Role';
+const model = 'Resource';
 
 const routes = () => {
   const router = express.Router();
@@ -118,58 +115,6 @@ const routes = () => {
       try {
         await deleteById(req.params.id);
         res.status(204).json({ message: `${model} is deleted` });
-      } catch (error) {
-        next(error);
-      }
-    }
-  );
-
-  router.get(
-    '/:id/permissions',
-    logRequest({}),
-    validateRequest({ schema: idSchema, isParam: true }),
-    async (req, res, next) => {
-      try {
-        const role = await getById(req.params.id);
-        if (!role) {
-          throw new AppError(`${model} not found`, `${model} not found`, 404);
-        }
-        
-        // Get all resources grouped by type
-        const resources = await getAllGroupedByType();
-        
-        // Combine resources with role permissions
-        const response = {
-          roleId: role._id,
-          roleName: role.name,
-          resourcesByType: resources,
-          permissions: Object.fromEntries(role.permissions)
-        };
-        
-        res.status(200).json(response);
-      } catch (error) {
-        next(error);
-      }
-    }
-  );
-
-  router.put(
-    '/:id/permissions',
-    logRequest({}),
-    isAuthorized,
-    validateRequest({ schema: idSchema, isParam: true }),
-    validateRequest({
-      schema: Joi.object({
-        permissions: Joi.object().pattern(
-          Joi.string(),
-          Joi.boolean()
-        ).required()
-      })
-    }),
-    async (req, res, next) => {
-      try {
-        const role = await updateRolePermissions(req.params.id, req.body.permissions);
-        res.status(200).json(role);
       } catch (error) {
         next(error);
       }

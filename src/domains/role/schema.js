@@ -1,7 +1,23 @@
 const mongoose = require('mongoose');
 const { baseSchema } = require('../../libraries/db/base-schema');
 
-const schema = new mongoose.Schema({
+const permissionSchema = new mongoose.Schema({
+  resource: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Resource',
+    required: true,
+  },
+  canAccess: {
+    type: Boolean,
+    default: false,
+  },
+  isDisabled: {
+    type: Boolean,
+    default: false,
+  },
+});
+
+const roleSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
@@ -17,16 +33,13 @@ const schema = new mongoose.Schema({
     type: String,
     default: '',
   },
-  permissions: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Permission'
-  }],
+  permissions: [permissionSchema],
   isSystem: {
     type: Boolean,
-    default: false  // To mark system-level roles like 'superadmin'
-  }
+    default: false,
+  },
 });
 
-schema.add(baseSchema);
+roleSchema.add(baseSchema);
 
-module.exports = mongoose.model('Role', schema);
+module.exports = mongoose.model('Role', roleSchema);

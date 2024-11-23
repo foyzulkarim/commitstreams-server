@@ -125,6 +125,11 @@ const schema = new mongoose.Schema({
       date: { type: Date, default: Date.now },
     },
   ],
+  // Roles related
+  role: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Role',
+  },
 });
 
 schema.add(baseSchema);
