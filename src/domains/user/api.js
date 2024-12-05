@@ -60,30 +60,7 @@ const routes = () => {
   );
 
   router.get(
-    '/:id/follow',
-    logRequest({}),
-    validateRequest({ schema: idSchema, isParam: true }),
-    async (req, res, next) => {
-      const currentUserId = req.user._id;
-      try {
-        if (currentUserId === req.params.id) {
-          throw new AppError(
-            'Cannot follow yourself',
-            'Cannot follow yourself',
-            400
-          );
-        }
-
-        const result = await followUser(currentUserId, req.params.id);
-        res.status(200).json({ result });
-      } catch (error) {
-        next(error);
-      }
-    }
-  );
-
-  router.get(
-    '/:id',
+    '/detail/:id',
     logRequest({}),
     validateRequest({ schema: idSchema, isParam: true }),
     async (req, res, next) => {
@@ -129,7 +106,7 @@ const routes = () => {
   };
 
   router.delete(
-    '/:id',
+    '/remove/:id',
     logRequest({}),
     isAuthorized,
     validateRequest({ schema: idSchema, isParam: true }),
@@ -153,7 +130,7 @@ const routes = () => {
 
   // activateUser
   router.post(
-    '/:id/activate',
+    '/activate/:id',
     logRequest({}),
     isAuthorized,
     validateRequest({ schema: idSchema, isParam: true }),

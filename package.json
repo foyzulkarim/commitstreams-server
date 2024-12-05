@@ -17,7 +17,8 @@
     "logs:prod": "pm2 logs src/start.js",
     "restart:prod": "NODE_ENV=production pm2 restart src/start.js",
     "create-domain": "zx scripts/dev/domain-generator.js",
-    "bump-version": "npm version patch -m 'Bump version to %s'"
+    "bump-version": "npm version patch -m 'Bump version to %s'",
+    "migrate": "node src/migration-runner.js"
   },
   "keywords": [],
   "author": "",

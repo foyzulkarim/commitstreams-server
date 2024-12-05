@@ -2,16 +2,10 @@ const mongoose = require('mongoose');
 const { baseSchema } = require('../../libraries/db/base-schema');
 
 const resourceSchema = new mongoose.Schema({
-  name: {
+  label: {
     type: String,
     required: true,
-    unique: true,
-    lowercase: true,
-    trim: true,
-  },
-  displayName: {
-    type: String,
-    required: true,
+    index: true,
   },
   description: {
     type: String,
@@ -21,11 +15,18 @@ const resourceSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true,
+    index: true,
   },
   type: {
     type: String,
     enum: ['api', 'ui', 'menu'],
     default: 'api',
+    index: true,
+  },
+  module: {
+    type: String,
+    required: true,
+    index: true,
   },
 });
 

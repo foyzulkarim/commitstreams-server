@@ -5,6 +5,7 @@ const schema = Joi.object({
     .valid('development', 'production', 'test')
     .default('development'),
   MONGODB_URI: Joi.string().required(),
+  DB_NAME: Joi.string().required(),
   RATE: Joi.number().min(0).required(),
   PORT: Joi.number().min(1000).default(4000),
   // LOGGLY is required when NODE_ENV is production
