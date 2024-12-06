@@ -101,6 +101,10 @@ const schema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  isSuperAdmin: {
+    type: Boolean,
+    default: false,
+  },
   isDeactivated: {
     type: Boolean,
     default: false,

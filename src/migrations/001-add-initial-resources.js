@@ -1,5 +1,40 @@
 const Resource = require('../domains/resource/schema');
-const data = require("./files/001-resources.json");
+
+const data = {
+  "resources": [
+    {
+      "label": "Search Users",
+      "type": "api",
+      "identifier": "/api/users/search",
+      "module": "users"
+    },
+    {
+      "label": "Count Users",
+      "type": "api",
+      "identifier": "/api/users/count",
+      "module": "users"
+    },
+    {
+      "label": "Get User",
+      "type": "api",
+      "identifier": "/api/users/detail/:id",
+      "module": "users"
+    },
+    {
+      "label": "Delete User",
+      "type": "api",
+      "identifier": "/api/users/remove/:id",
+      "module": "users"
+    },
+    {
+      "label": "Activate User",
+      "type": "api",
+      "identifier": "/api/users/activate/:id",
+      "module": "users"
+    }
+  ]
+};
+
 
 async function insertResource(resource) {
   try {

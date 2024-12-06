@@ -1,5 +1,46 @@
 const Model = require('../domains/role/schema');
-const data = require("./files/002-roles.json");
+
+const data = {
+  "roles": [
+    {
+      "name": "Super admin",
+      "identifier": "superadmin",
+      "isSystemManaged": true,
+      "permissions": {
+        "api": [
+          "/api/*"
+        ],
+        "client": []
+      }
+    },
+    {
+      "name": "Admin",
+      "identifier": "admin",
+      "isSystemManaged": true,
+      "permissions": {
+        "api": [
+          "/api/v1/*",
+          "/api/users/search",
+          "/api/users/count",
+          "/api/users/detail/:id"
+        ],
+        "client": []
+      }
+    },
+    {
+      "name": "Visitor",
+      "identifier": "visitor",
+      "isSystemManaged": true,
+      "permissions": {
+        "api": [
+          "/api/v1/*"
+        ],
+        "client": []
+      }
+    }
+  ]
+};
+
 
 async function insert(item) {
   try {
