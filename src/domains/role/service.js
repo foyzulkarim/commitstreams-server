@@ -108,26 +108,17 @@ const deleteById = async (id) => {
   }
 };
 
-const updateRolePermissions = async (roleId, permissions) => {
-  try {
-    const role = await Model.findById(roleId);
-    if (!role) {
-      throw new AppError(`${model} not found`, `${model} not found`, 404);
-    }
-
-    // Convert plain object to Map
-    role.permissions = new Map(Object.entries(permissions));
-    
-    const updated = await role.save();
-    logger.info(`updateRolePermissions(): ${model} permissions updated`, {
-      id: roleId,
-      permissionCount: Object.keys(permissions).length
+const getClientPermissionsByRoleIdentifierSync = async (roleIdentifier) => {
+  const role = await Model.findOne({ identifier: roleIdentifier });
+  if (!role) {
+    logger.error(`getClientPermissionsByRoleIdentifier(): Role ${roleIdentifier} not found`);
+    return [];
+  }
+  else {
+    logger.info(`getClientPermissionsByRoleIdentifier(): Role ${roleIdentifier} found`, {
+      permissions: role.permissions?.client
     });
-    
-    return updated;
-  } catch (error) {
-    logger.error(`updateRolePermissions(): Failed to update ${model} permissions`, error);
-    throw new AppError(`Failed to update ${model} permissions`, error.message);
+    return role.permissions?.client ?? [];
   }
 };
 
@@ -138,5 +129,5 @@ module.exports = {
   getById,
   updateById,
   deleteById,
-  updateRolePermissions,
+  getClientPermissionsByRoleIdentifierSync,
 };

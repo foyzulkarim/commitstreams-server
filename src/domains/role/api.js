@@ -58,21 +58,6 @@ const routes = () => {
     }
   );
 
-  router.post(
-    '/',
-    logRequest({}),
-    isAuthorized,
-    validateRequest({ schema: createSchema }),
-    async (req, res, next) => {
-      try {
-        const item = await create(req.body);
-        res.status(201).json(item);
-      } catch (error) {
-        next(error);
-      }
-    }
-  );
-
   router.get(
     '/:id',
     logRequest({}),
@@ -84,92 +69,6 @@ const routes = () => {
           throw new AppError(`${model} not found`, `${model} not found`, 404);
         }
         res.status(200).json(item);
-      } catch (error) {
-        next(error);
-      }
-    }
-  );
-
-  router.put(
-    '/:id',
-    logRequest({}),
-    isAuthorized,
-    validateRequest({ schema: idSchema, isParam: true }),
-    validateRequest({ schema: updateSchema }),
-    async (req, res, next) => {
-      try {
-        const item = await updateById(req.params.id, req.body);
-        if (!item) {
-          throw new AppError(`${model} not found`, `${model} not found`, 404);
-        }
-        res.status(200).json(item);
-      } catch (error) {
-        next(error);
-      }
-    }
-  );
-
-  router.delete(
-    '/:id',
-    logRequest({}),
-    isAuthorized,
-    validateRequest({ schema: idSchema, isParam: true }),
-    async (req, res, next) => {
-      try {
-        await deleteById(req.params.id);
-        res.status(204).json({ message: `${model} is deleted` });
-      } catch (error) {
-        next(error);
-      }
-    }
-  );
-
-  router.get(
-    '/:id/permissions',
-    logRequest({}),
-    validateRequest({ schema: idSchema, isParam: true }),
-    async (req, res, next) => {
-      try {
-        const role = await getById(req.params.id);
-        if (!role) {
-          throw new AppError(`${model} not found`, `${model} not found`, 404);
-        }
-        
-        // Get all resources grouped by type
-        const resources = await getAllGroupedByType();
-        
-        // Combine resources with role permissions
-        const response = {
-          roleId: role._id,
-          roleName: role.name,
-          resourcesByType: resources,
-          permissions: Object.fromEntries(role.permissions)
-        };
-        
-        res.status(200).json(response);
-      } catch (error) {
-        next(error);
-      }
-    }
-  );
-
-  router.put(
-    '/:id/permissions',
-    logRequest({}),
-    isAuthorized,
-    validateRequest({ schema: idSchema, isParam: true }),
-    validateRequest({
-      schema: Joi.object({
-        permissions: Joi.object().pattern(
-          Joi.string(),
-          Joi.boolean()
-        ).required()
-      })
-    }),
-    async (req, res, next) => {
-      try {
-        const role = await updateRolePermissions(req.params.id, req.body.permissions);
-        res.status(200).json(role);
       } catch (error) {
         next(error);
       }

@@ -1,46 +1,71 @@
 const Model = require('../domains/role/schema');
 
 const data = {
-  "roles": [
+  roles: [
     {
-      "name": "Super admin",
-      "identifier": "superadmin",
-      "isSystemManaged": true,
-      "permissions": {
-        "api": [
-          "/api/*"
+      name: 'Super admin',
+      identifier: 'superadmin',
+      isSystemManaged: true,
+      permissions: {
+        api: [
+          // Users
+          '/api/v1/users/search',
+          '/api/v1/users/count',
+          '/api/v1/users/detail/:id',
+          '/api/v1/users/remove/:id',
+          '/api/v1/users/activate/:id',
+          // Resources
+          '/api/v1/resources/search',
+          '/api/v1/resources/count',
+          '/api/v1/resources/detail/:id',
+          // Roles
+          '/api/v1/roles/search',
+          '/api/v1/roles/count',
+          '/api/v1/roles/detail/:id',
         ],
-        "client": []
-      }
+        client: [
+          'sidebar-users',
+          'sidebar-roles',
+        ],
+      },
     },
     {
-      "name": "Admin",
-      "identifier": "admin",
-      "isSystemManaged": true,
-      "permissions": {
-        "api": [
-          "/api/v1/*",
-          "/api/users/search",
-          "/api/users/count",
-          "/api/users/detail/:id"
+      name: 'Admin',
+      identifier: 'admin',
+      isSystemManaged: true,
+      permissions: {
+        api: [
+          '/api/v1/users/search',
+          '/api/v1/users/count',
+          '/api/v1/users/detail/:id',
         ],
-        "client": []
-      }
+        client: [],
+      },
     },
     {
-      "name": "Visitor",
-      "identifier": "visitor",
-      "isSystemManaged": true,
-      "permissions": {
-        "api": [
-          "/api/v1/*"
+      name: 'Visitor',
+      identifier: 'visitor',
+      isSystemManaged: true,
+      permissions: {
+        api: [
+          // Pull
+          '/api/v1/pulls/search',
+          '/api/v1/pulls/count',
+          '/api/v1/pulls/detail/:id',
+          '/api/v1/pulls/fetch-updates',
+          // Repositories
+          '/api/v1/repositories/search',
+          '/api/v1/repositories/count',
+          '/api/v1/repositories/detail/:id',
+          '/api/v1/repositories/search-one',
+          '/api/v1/repositories/fetch-from-github',
+          '/api/v1/repositories/follow/:id',
         ],
-        "client": []
-      }
-    }
-  ]
+        client: [],
+      },
+    },
+  ],
 };
-
 
 async function insert(item) {
   try {
@@ -60,17 +85,17 @@ async function insert(item) {
 }
 
 async function runMigration() {
-  console.log("Running migration: 002-add-roles-permissions");
+  console.log('Running migration: 002-add-roles-permissions');
 
   try {
     for (const role of data.roles) {
       await insert(role);
     }
-    console.log("Successfully completed migration 002");
+    console.log('Successfully completed migration 002');
   } catch (error) {
-    console.error("Failed to complete migration 002:", error);
+    console.error('Failed to complete migration 002:', error);
     throw error;
   }
 }
 
-module.exports = { runMigration }; 
+module.exports = { runMigration };

@@ -19,7 +19,7 @@ const resourceSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['api', 'ui', 'menu'],
+    enum: ['api', 'client'],
     default: 'api',
     index: true,
   },

@@ -43,7 +43,7 @@ async function runMigration() {
       isVerified: true,
       isAdmin: true,
       isSuperAdmin: true,
-      roles: ['superadmin']
+      role: 'superadmin'
     };
 
     await insert(superAdminUser);
@@ -59,7 +59,7 @@ async function runMigration() {
       isDemo: false,
       isVerified: true,
       isAdmin: true,
-      roles: ['admin']
+      role: 'admin'
     };
 
     await insert(adminUser);
@@ -75,7 +75,7 @@ async function runMigration() {
       isDemo: false,
       isVerified: true,
       isAdmin: false,
-      roles: ['visitor']
+      role: 'visitor'
     };
 
     await insert(visitorUser);

@@ -131,8 +131,9 @@ const schema = new mongoose.Schema({
   ],
   // Roles related
   role: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Role',
+    type: String,
+    required: true,
+    default: 'visitor',
   },
 });
 

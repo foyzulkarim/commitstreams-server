@@ -22,7 +22,22 @@ const {
   getGoogleStrategy,
 } = require('./auth');
 
+const { getClientPermissionsByRoleIdentifierSync } = require('./domains/role/service');
+
 let connection;
+
+// Helper function to create consistent trimmed user object
+const createTrimmedUser = (user) => ({
+  _id: user._id,
+  email: user.email,
+  authType: user.authType,
+  displayName: user.displayName,
+  isAdmin: user.isAdmin,
+  isDeactivated: user.isDeactivated,
+  isDemo: user.isDemo,
+  role: user.role,
+  permissions: user.permissions,
+});
 
 const handleAuthCallback = (strategy) => {
   return [
@@ -39,14 +54,16 @@ const handleAuthCallback = (strategy) => {
               `${config.CLIENT_HOST}/login?error=${err?.name}`
             );
           }
-          req.logIn(user, function (err) {
+
+          const trimmedUser = createTrimmedUser(user);
+          req.logIn(trimmedUser, function (err) {
             if (err) {
               return res.redirect(
                 `${config.CLIENT_HOST}/login?error=failed-to-authenticate`
               );
             }
 
-            req.session.userId = user._id;
+            req.session.userId = trimmedUser._id;
             req.session.sessionId = req.sessionID;
             req.session.save((err) => {
               if (err) {
@@ -109,12 +126,16 @@ const createExpressApp = () => {
   expressApp.use(passport.initialize());
   expressApp.use(passport.session());
 
-  passport.serializeUser(function (user, done) {
-    done(null, user);
+  // Update serialization
+  passport.serializeUser(async function (user, done) {
+    const trimmedUser = createTrimmedUser(user);
+    console.log('serializeUser', trimmedUser);
+    done(null, trimmedUser);
   });
 
-  passport.deserializeUser(function (user, done) {
-    done(null, user);
+  passport.deserializeUser(function (trimmedUser, done) {
+    console.log('deserializeUser', trimmedUser);
+    done(null, trimmedUser);
   });
 
   expressApp.use((req, res, next) => {
@@ -140,8 +161,9 @@ const createExpressApp = () => {
     if (!req.user) {
       return res.status(401).send('Unauthorized');
     }
-    const { accessToken, accessTokenIV, ...user } = req.user;
-    res.json(user);
+
+    const userResponse = createTrimmedUser(req.user);
+    res.json(userResponse);
   });
 
   expressApp.post('/api/register', async (req, res, next) => {
@@ -156,8 +178,8 @@ const createExpressApp = () => {
     }
   });
 
-  expressApp.post('/api/login', (req, res, next) => {
-    passport.authenticate('local', (err, user, info) => {
+  expressApp.post('/api/login', async (req, res, next) => {
+    passport.authenticate('local', async (err, user, info) => {
       logger.info('Login attempt', { err, user, info });
       if (err) {
         return next(err);
@@ -168,25 +190,19 @@ const createExpressApp = () => {
           .json({ message: info.message || 'Authentication failed' });
       }
 
+      user.permissions = {
+        client: await getClientPermissionsByRoleIdentifierSync(user.role),
+      };
+
       req.logIn(user, (err) => {
         if (err) {
           return next(err);
         }
 
-        // Create a sanitized user object for the client
-        const trimmedPayloadForSession = {
-          _id: user._id,
-          email: user.email,
-          authType: user.authType,
-          displayName: user.displayName,
-          isAdmin: user.isAdmin,
-          isDeactivated: user.isDeactivated,
-          isDemo: user.isDemo,
-        };
-
+        const trimmedUser = createTrimmedUser(user);
         return res.json({
           message: 'Login successful',
-          user: trimmedPayloadForSession,
+          user: trimmedUser,
         });
       });
     })(req, res, next);

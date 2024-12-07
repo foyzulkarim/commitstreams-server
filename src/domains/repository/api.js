@@ -98,9 +98,8 @@ const routes = () => {
     }
   );
 
-  //'/:id/follow'
   router.get(
-    '/:id/follow',
+    '/follow/:id',
     logRequest({}),
     validateRequest({ schema: idSchema, isParam: true }),
     async (req, res, next) => {

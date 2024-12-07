@@ -33,6 +33,11 @@ const routes = () => {
     validateRequest({ schema: searchSchema, isQuery: true }),
     async (req, res, next) => {
       try {
+        console.log('req', {
+          url: req.url,
+          query: req.query,
+          originalUrl: req.originalUrl,
+        });
         const items = await search(req.query);
         res.json(items);
       } catch (error) {
@@ -55,21 +60,6 @@ const routes = () => {
     }
   );
 
-  router.post(
-    '/',
-    logRequest({}),
-    isAuthorized,
-    validateRequest({ schema: createSchema }),
-    async (req, res, next) => {
-      try {
-        const item = await create(req.body);
-        res.status(201).json(item);
-      } catch (error) {
-        next(error);
-      }
-    }
-  );
-
   router.get(
     '/:id',
     logRequest({}),
@@ -81,40 +71,6 @@ const routes = () => {
           throw new AppError(`${model} not found`, `${model} not found`, 404);
         }
         res.status(200).json(item);
-      } catch (error) {
-        next(error);
-      }
-    }
-  );
-
-  router.put(
-    '/:id',
-    logRequest({}),
-    isAuthorized,
-    validateRequest({ schema: idSchema, isParam: true }),
-    validateRequest({ schema: updateSchema }),
-    async (req, res, next) => {
-      try {
-        const item = await updateById(req.params.id, req.body);
-        if (!item) {
-          throw new AppError(`${model} not found`, `${model} not found`, 404);
-        }
-        res.status(200).json(item);
-      } catch (error) {
-        next(error);
-      }
-    }
-  );
-
-  router.delete(
-    '/:id',
-    logRequest({}),
-    isAuthorized,
-    validateRequest({ schema: idSchema, isParam: true }),
-    async (req, res, next) => {
-      try {
-        await deleteById(req.params.id);
-        res.status(204).json({ message: `${model} is deleted` });
       } catch (error) {
         next(error);
       }
