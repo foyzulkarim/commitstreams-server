@@ -33,6 +33,10 @@ const schema = Joi.object({
   ADMIN_USERNAMES: Joi.array().items(Joi.string()).required(),
   SUPERADMIN_EMAIL: Joi.string().email().required(),
   SUPERADMIN_PASSWORD: Joi.string().min(8).required(),
+  // SendGrid Configuration
+  SENDGRID_API_KEY: Joi.string().required(),
+  SENDGRID_FROM_EMAIL: Joi.string().email().required(),
+  SENDGRID_VERIFICATION_TEMPLATE_ID: Joi.string().required(),
 });
 
 module.exports = schema;

@@ -25,6 +25,7 @@
   "license": "ISC",
   "dependencies": {
     "@octokit/rest": "^20.1.1",
+    "@sendgrid/mail": "^8.1.4",
     "bcrypt": "^5.1.1",
     "compression": "^1.7.4",
     "connect-mongo": "^5.1.0",

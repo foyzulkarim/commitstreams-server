@@ -3,7 +3,6 @@ const express = require('express');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
-const bcrypt = require('bcrypt');
 
 const passport = require('passport');
 const session = require('express-session');
@@ -20,7 +19,11 @@ const {
   localStrategy,
   registerUser,
   getGoogleStrategy,
+  verifyEmail,
+  resendVerificationEmail,
 } = require('./auth');
+
+const { AppError } = require('./libraries/error-handling/AppError');
 
 const { getClientPermissionsByRoleIdentifierSync } = require('./domains/role/service');
 
@@ -172,8 +175,53 @@ const createExpressApp = () => {
       const newUser = await registerUser({ email, password });
       res
         .status(201)
-        .json({ message: 'User registered successfully', userId: newUser._id });
+        .json({ message: 'Registration successful. Please check your email to verify your account.', userId: newUser._id });
     } catch (err) {
+      next(err);
+    }
+  });
+
+  // Debug email routes - only available in development
+  if (process.env.NODE_ENV === 'development') {
+    const { listDebugEmails, readDebugEmail, isDebugMode } = require('./libraries/email/emailService');
+
+    expressApp.get('/api/debug/emails', async (req, res) => {
+      if (!isDebugMode) {
+        return res.status(400).json({ message: 'Email debug mode is not enabled' });
+      }
+      const emails = await listDebugEmails();
+      res.json(emails);
+    });
+
+    expressApp.get('/api/debug/emails/:filename', async (req, res) => {
+      if (!isDebugMode) {
+        return res.status(400).json({ message: 'Email debug mode is not enabled' });
+      }
+      try {
+        const content = await readDebugEmail(req.params.filename);
+        res.send(content);
+      } catch (error) {
+        res.status(404).json({ message: 'Email not found' });
+      }
+    });
+  }
+
+  expressApp.get('/api/verify-email', async (req, res, next) => {
+    try {
+      const { token } = req.query;
+      if (!token) {
+        return res.status(400).json({ message: 'Verification token is required' });
+      }
+
+      const result = await verifyEmail(token);
+      res.json(result);
+    } catch (err) {
+      if (err instanceof AppError) {
+        return res.status(err.statusCode || 400).json({ 
+          message: err.message,
+          code: err.name 
+        });
+      }
       next(err);
     }
   });
@@ -187,7 +235,7 @@ const createExpressApp = () => {
       if (!user) {
         return res
           .status(401)
-          .json({ message: info.message || 'Authentication failed' });
+          .json({ message: info.message || 'Authentication failed', reason: info.reason });
       }
 
       user.permissions = {
@@ -247,6 +295,27 @@ const createExpressApp = () => {
     '/api/auth/google',
     passport.authenticate('google', { scope: ['profile', 'email'] })
   );
+
+  expressApp.post('/api/resend-verification', async (req, res, next) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: 'Email is required' });
+      }
+
+      const result = await resendVerificationEmail(email);
+      res.json(result);
+    } catch (err) {
+      if (err instanceof AppError) {
+        return res.status(err.statusCode || 400).json({ 
+          message: err.message,
+          code: err.name 
+        });
+      }
+      next(err);
+    }
+  });
 
   defineRoutes(expressApp);
   defineErrorHandlingMiddleware(expressApp);

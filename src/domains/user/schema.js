@@ -88,6 +88,15 @@ const schema = new mongoose.Schema({
     },
   },
 
+  // Email verification fields
+  verificationToken: {
+    type: String,
+    sparse: true,
+  },
+  verificationTokenExpiry: {
+    type: Date,
+  },
+
   // Auth and status flags
   isDemo: {
     type: Boolean,
@@ -183,5 +192,6 @@ schema.index({ 'github.id': 1 }, { unique: true, sparse: true });
 schema.index({ 'google.id': 1 }, { unique: true, sparse: true });
 schema.index({ 'local.username': 1 }, { unique: true, sparse: true });
 schema.index({ email: 1 }, { unique: true });
+schema.index({ verificationToken: 1 }, { sparse: true });
 
 module.exports = mongoose.model('User', schema);

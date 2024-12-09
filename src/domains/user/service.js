@@ -1,7 +1,7 @@
 const logger = require('../../libraries/log/logger');
-
 const Model = require('./schema');
 const { AppError } = require('../../libraries/error-handling/AppError');
+const crypto = require('crypto');
 
 const model = 'user';
 const projection = { accessToken: 0, accessTokenIV: 0 };
@@ -203,6 +203,83 @@ const followUser = async (followerId, followedId) => {
   }
 };
 
+const findByVerificationToken = async (token) => {
+  try {
+    return await Model.findOne({
+      verificationToken: token,
+      verificationTokenExpiry: { $gt: new Date() },
+      isVerified: false
+    });
+  } catch (error) {
+    logger.error('findByVerificationToken(): Failed to find user by token', error);
+    throw new AppError('Failed to find user by token', error.message, 400);
+  }
+};
+
+const generateVerificationToken = () => {
+  return crypto.randomBytes(32).toString('hex');
+};
+
+const canResendVerification = async (userId) => {
+  const user = await Model.findById(userId);
+  if (!user) {
+    throw new AppError('user-not-found', 'User not found', 404);
+  }
+
+  // If user is already verified
+  if (user.isVerified) {
+    throw new AppError('already-verified', 'Email is already verified', 400);
+  }
+
+  // Check if last token was generated less than 1 minute ago
+  if (user.verificationTokenExpiry) {
+    const timeSinceLastEmail = new Date() - user.verificationTokenExpiry;
+    const oneMinuteInMs = 1 * 60 * 1000;
+    
+    if (timeSinceLastEmail < oneMinuteInMs) {
+      const remainingSeconds = Math.ceil((oneMinuteInMs - timeSinceLastEmail) / 1000);
+      throw new AppError(
+        'rate-limit', 
+        `Please wait ${remainingSeconds} seconds before requesting another verification email`,
+        429
+      );
+    }
+  }
+
+  return true;
+};
+
+const refreshVerificationToken = async (email) => {
+  try {
+    const user = await Model.findOne({ email, authType: 'local' });
+    
+    if (!user) {
+      throw new AppError('user-not-found', 'No account found with this email', 404);
+    }
+
+    await canResendVerification(user._id);
+
+    // Generate new verification token
+    const verificationToken = generateVerificationToken();
+    const verificationTokenExpiry = new Date(Date.now() + 1 * 60 * 1000); // 1 minute
+
+    // Update user with new token
+    await updateById(user._id, {
+      verificationToken,
+      verificationTokenExpiry,
+      updatedAt: new Date()
+    });
+
+    return { user, verificationToken };
+  } catch (error) {
+    if (error instanceof AppError) {
+      throw error;
+    }
+    logger.error('refreshVerificationToken(): Failed to refresh token', error);
+    throw new AppError('refresh-token-failed', error.message, 400);
+  }
+};
+
 module.exports = {
   create,
   search,
@@ -217,4 +294,6 @@ module.exports = {
   activateUser,
   getByEmail,
   getByGoogleId,
+  findByVerificationToken,
+  refreshVerificationToken,
 };
