@@ -96,6 +96,9 @@ const schema = new mongoose.Schema({
   verificationTokenExpiry: {
     type: Date,
   },
+  verificationEmailSentAt: {
+    type: Date,
+  },
 
   // Auth and status flags
   isDemo: {

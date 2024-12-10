@@ -8,7 +8,8 @@ const path = require('path');
 sgMail.setApiKey(config.SENDGRID_API_KEY);
 
 // Debug mode configuration
-const isDebugMode = process.env.NODE_ENV === 'development' && process.env.EMAIL_DEBUG === 'true';
+const isDebugMode = process.env.EMAIL_DEBUG === 'true';
+console.log('isDebugMode', isDebugMode, 'process.env.NODE_ENV', process.env.NODE_ENV, 'process.env.EMAIL_DEBUG', process.env.EMAIL_DEBUG);
 const debugDir = path.join(__dirname, 'debug');
 
 // Ensure debug directory exists
@@ -38,36 +39,54 @@ const saveDebugEmail = async (email, content) => {
   }
 };
 
+// Function to load and compile email template
+const loadTemplate = async (templateName, replacements) => {
+  const templatePath = path.join(__dirname, 'templates', templateName);
+  let template = await fs.readFile(templatePath, 'utf8');
+
+  // Replace all placeholders with actual values
+  Object.keys(replacements).forEach(key => {
+    const regex = new RegExp(`{{${key}}}`, 'g');
+    template = template.replace(regex, replacements[key]);
+  });
+
+  return template;
+};
+
 const sendVerificationEmail = async (email, verificationToken) => {
   const verificationLink = `${config.CLIENT_HOST}/verify-email?token=${verificationToken}`;
-  
+
   try {
     await ensureDebugDir();
-    
+
+    // Load and compile the HTML template
+    const htmlContent = await loadTemplate('verification2.html', {
+      appName: 'CommitStreams',
+      userEmail: email,
+      verificationLink: verificationLink,
+      expiryHours: '24'
+    });
+
     const msg = {
       to: email,
       from: config.SENDGRID_FROM_EMAIL,
-      templateId: config.SENDGRID_VERIFICATION_TEMPLATE_ID,
-      dynamicTemplateData: {
-        appName: 'CommitStreams',
-        userEmail: email,
-        verificationLink: verificationLink,
-        expiryHours: '1'
-      }
+      subject: 'Verify your email address',
+      html: htmlContent,
     };
 
     if (isDebugMode) {
-      // In debug mode, save email data locally
+      // In debug mode, save email locally
       await saveDebugEmail(email, `
         <h2>Email Debug Information</h2>
         <pre>
 To: ${msg.to}
 From: ${msg.from}
-Template ID: ${msg.templateId}
-Dynamic Template Data: ${JSON.stringify(msg.dynamicTemplateData, null, 2)}
+Subject: ${msg.subject}
         </pre>
+        <hr>
+        ${htmlContent}
       `);
-      logger.info('Debug mode: Email data saved locally', { email });
+      logger.info('Debug mode: Email saved locally', { email });
     } else {
       // In production mode, send via SendGrid
       await sgMail.send(msg);

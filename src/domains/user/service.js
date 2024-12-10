@@ -231,10 +231,10 @@ const canResendVerification = async (userId) => {
     throw new AppError('already-verified', 'Email is already verified', 400);
   }
 
-  // Check if last token was generated less than 1 minute ago
-  if (user.verificationTokenExpiry) {
-    const timeSinceLastEmail = new Date() - user.verificationTokenExpiry;
-    const oneMinuteInMs = 1 * 60 * 1000;
+  // Check if last verification email was sent less than 1 minute ago
+  if (user.verificationEmailSentAt) {
+    const timeSinceLastEmail = new Date() - user.verificationEmailSentAt;
+    const oneMinuteInMs = 60000; // 1 minute in milliseconds
     
     if (timeSinceLastEmail < oneMinuteInMs) {
       const remainingSeconds = Math.ceil((oneMinuteInMs - timeSinceLastEmail) / 1000);
@@ -261,12 +261,14 @@ const refreshVerificationToken = async (email) => {
 
     // Generate new verification token
     const verificationToken = generateVerificationToken();
-    const verificationTokenExpiry = new Date(Date.now() + 1 * 60 * 1000); // 1 minute
+    const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const verificationEmailSentAt = new Date();
 
-    // Update user with new token
+    // Update user with new token and email sent timestamp
     await updateById(user._id, {
       verificationToken,
       verificationTokenExpiry,
+      verificationEmailSentAt,
       updatedAt: new Date()
     });
 
