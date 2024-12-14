@@ -147,6 +147,10 @@ const schema = new mongoose.Schema({
     required: true,
     default: 'visitor',
   },
+  roleId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Role',
+  },
 });
 
 schema.add(baseSchema);

@@ -1,5 +1,6 @@
 const logger = require('../../libraries/log/logger');
 const Model = require('./schema');
+const Role = require('../role/schema');
 const { AppError } = require('../../libraries/error-handling/AppError');
 const crypto = require('crypto');
 
@@ -133,6 +134,21 @@ const activateUser = async (id) => {
     throw new AppError(`Failed to activate ${model}`, error.message);
   }
 };
+
+const updateUserRole = async (id, payload) => {
+  try {
+    const item = await Model.findById(id);
+    const role = await Role.findById(payload.roleId);
+    item.role = role.name;
+    item.roleId = role._id;
+    await item.save();
+    logger.info(`updateUserRole(): ${model} updated`, { id, role: item.role });
+    return item;
+  } catch (error) {
+    logger.error(`updateUserRole(): Failed to update ${model}`, error);
+    throw new AppError(`Failed to update ${model}`, error.message);
+  }
+}
 
 const getByGitHubId = async (githubId) => {
   return await Model.findOne({ 'github.id': githubId });
@@ -298,4 +314,5 @@ module.exports = {
   getByGoogleId,
   findByVerificationToken,
   refreshVerificationToken,
+  updateUserRole,
 };

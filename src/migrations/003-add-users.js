@@ -1,6 +1,8 @@
 const User = require('../domains/user/schema');
+const Role = require('../domains/role/schema');
 const bcrypt = require('bcrypt');
 const config = require('../configs');
+const { ROLES } = require('./constants');
 
 async function insert(user) {
   try {
@@ -10,8 +12,10 @@ async function insert(user) {
       console.log(`${user.displayName} already exists: ${user.email}`);
       return;
     }
+
+    user.roleId = await Role.findOne({name: user.role});
     const result = await User.create(user);
-    console.log(`Inserted ${user.displayName}: ${result._id}`);
+    console.log(`Inserted ${user.displayName}`);
     return result;
   } catch (error) {
     console.error(`Error inserting ${user.displayName}:`, error);
@@ -54,12 +58,12 @@ async function runMigration() {
       authType: 'local',
       local: {
         username: 'admin@example.com',
-        password: 'password', // sample password for demo purposes
+        password: await bcrypt.hash('password', salt),
       },
-      isDemo: false,
+      isDemo: true,
       isVerified: true,
       isAdmin: true,
-      role: 'admin'
+      role: ROLES.ADMIN
     };
 
     await insert(adminUser);
@@ -70,12 +74,12 @@ async function runMigration() {
       authType: 'local',
       local: {
         username: 'visitor@example.com',
-        password: 'password', // sample password for demo purposes
+        password: await bcrypt.hash('password', salt),
       },
-      isDemo: false,
+      isDemo: true,
       isVerified: true,
       isAdmin: false,
-      role: 'visitor'
+      role: ROLES.VISITOR
     };
 
     await insert(visitorUser);

@@ -12,6 +12,7 @@ const {
   followUser,
   deactivateUser,
   activateUser,
+  updateUserRole,
 } = require('./service');
 
 const {
@@ -19,6 +20,7 @@ const {
   updateSchema,
   idSchema,
   searchSchema,
+  updateUserRoleSchema,
 } = require('./request');
 const { validateRequest } = require('../../middlewares/request-validate');
 const { logRequest } = require('../../middlewares/log');
@@ -140,6 +142,22 @@ const routes = () => {
         res
           .status(200)
           .json({ message: `${activatedUser.username} has been activated` });
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
+  // update user's role only
+  router.put(
+    '/update-role/:id',
+    logRequest({}),
+    isAuthorized,
+    validateRequest({ schema: updateUserRoleSchema, isParam: false }),
+    async (req, res, next) => {
+      try {
+        const updatedUser = await updateUserRole(req.params.id, req.body);
+        res.status(200).json(updatedUser);
       } catch (error) {
         next(error);
       }

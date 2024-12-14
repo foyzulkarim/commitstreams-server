@@ -160,7 +160,7 @@ async function insertResource(resource) {
       return;
     }
     const result = await Resource.create(resource);
-    console.log(`Inserted resource: ${resource._id}`);
+    console.log(`Inserted resource: ${resource.identifier}`);
     return result;
   } catch (error) {
     console.error(`Error inserting resource ${resource.id}:`, error);

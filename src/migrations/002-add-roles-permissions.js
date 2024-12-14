@@ -1,9 +1,10 @@
 const Model = require('../domains/role/schema');
+const { ROLES } = require('./constants');
 
 const data = {
   roles: [
     {
-      name: 'Super admin',
+      name: ROLES.SUPER_ADMIN,
       identifier: 'superadmin',
       isSystemManaged: true,
       permissions: {
@@ -30,7 +31,7 @@ const data = {
       },
     },
     {
-      name: 'Admin',
+      name: ROLES.ADMIN,
       identifier: 'admin',
       isSystemManaged: true,
       permissions: {
@@ -39,11 +40,13 @@ const data = {
           '/api/v1/users/count',
           '/api/v1/users/detail/:id',
         ],
-        client: [],
+        client: [
+          'sidebar-users',
+        ],
       },
     },
     {
-      name: 'Visitor',
+      name: ROLES.VISITOR,
       identifier: 'visitor',
       isSystemManaged: true,
       permissions: {
@@ -76,10 +79,10 @@ async function insert(item) {
       return;
     }
     const result = await Model.create(item);
-    console.log(`Inserted role: ${item._id}`);
+    console.log(`Inserted role: ${item.identifier}`);
     return result;
   } catch (error) {
-    console.error(`Error inserting role ${item._id}:`, error);
+    console.error(`Error inserting role ${item.identifier}:`, error);
     throw error;
   }
 }
