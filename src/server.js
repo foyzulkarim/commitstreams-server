@@ -65,8 +65,8 @@ const handleAuthCallback = (strategy) => {
                 `${config.CLIENT_HOST}/login?error=failed-to-authenticate`
               );
             }
-
-            req.session.userId = trimmedUser._id;
+            logger.info('saving session for user', { user: trimmedUser });
+            req.session.userId = trimmedUser._id.toString();
             req.session.sessionId = req.sessionID;
             req.session.save((err) => {
               if (err) {
@@ -132,12 +132,10 @@ const createExpressApp = () => {
   // Update serialization
   passport.serializeUser(async function (user, done) {
     const trimmedUser = createTrimmedUser(user);
-    console.log('serializeUser', trimmedUser);
     done(null, trimmedUser);
   });
 
   passport.deserializeUser(function (trimmedUser, done) {
-    console.log('deserializeUser', trimmedUser);
     done(null, trimmedUser);
   });
 
@@ -217,9 +215,9 @@ const createExpressApp = () => {
       res.json(result);
     } catch (err) {
       if (err instanceof AppError) {
-        return res.status(err.statusCode || 400).json({ 
+        return res.status(err.statusCode || 400).json({
           message: err.message,
-          code: err.name 
+          code: err.name
         });
       }
       next(err);
@@ -248,9 +246,28 @@ const createExpressApp = () => {
         }
 
         const trimmedUser = createTrimmedUser(user);
-        return res.json({
-          message: 'Login successful',
-          user: trimmedUser,
+        // Save session data
+        req.session.userId = trimmedUser._id.toString();
+        req.session.sessionId = req.sessionID;
+
+        logger.info('saving session for user', { user: trimmedUser });
+
+        // Explicitly save the session
+        req.session.save((err) => {
+          if (err) {
+            logger.error('Failed to save session', err);
+            return next(err);
+          }
+
+          logger.info('Session saved successfully', {
+            sessionId: req.sessionID,
+            userId: trimmedUser._id
+          });
+
+          return res.json({
+            message: 'Login successful',
+            user: trimmedUser,
+          });
         });
       });
     })(req, res, next);
@@ -259,7 +276,8 @@ const createExpressApp = () => {
   expressApp.get('/api/logout', async (req, res, next) => {
     const username = req.user?.username;
     const userId = req.user?._id;
-
+    console.log('req.session', req.session);
+    console.log('req.session.userId', req.session.userId);
     req.logout(async function (err) {
       // Passport.js logout function
       if (err) {
@@ -299,7 +317,7 @@ const createExpressApp = () => {
   expressApp.post('/api/resend-verification', async (req, res, next) => {
     try {
       const { email } = req.body;
-      
+      logger.info('resend-verification', { email });
       if (!email) {
         return res.status(400).json({ message: 'Email is required' });
       }
@@ -308,9 +326,9 @@ const createExpressApp = () => {
       res.json(result);
     } catch (err) {
       if (err instanceof AppError) {
-        return res.status(err.statusCode || 400).json({ 
+        return res.status(err.statusCode || 400).json({
           message: err.message,
-          code: err.name 
+          code: err.name
         });
       }
       next(err);

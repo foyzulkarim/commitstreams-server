@@ -99,6 +99,9 @@ const schema = new mongoose.Schema({
   verificationEmailSentAt: {
     type: Date,
   },
+  verifiedAt: {
+    type: Date,
+  },
 
   // Auth and status flags
   isDemo: {
@@ -145,7 +148,7 @@ const schema = new mongoose.Schema({
   role: {
     type: String,
     required: true,
-    default: 'visitor',
+    default: 'Visitor',
   },
   roleId: {
     type: mongoose.Schema.Types.ObjectId,

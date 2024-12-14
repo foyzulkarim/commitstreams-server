@@ -298,6 +298,42 @@ const refreshVerificationToken = async (email) => {
   }
 };
 
+const completeEmailVerification = async (userId) => {
+  try {
+    const defaultRole = await Role.findOne({ name: 'Visitor' });
+    if (!defaultRole) {
+      throw new AppError('role-not-found', 'Default user role not found', 500);
+    }
+
+    const updateData = {
+      $unset: {
+        verificationToken: 1,
+        verificationTokenExpiry: 1,
+        isDemo: 1
+      },
+      $set: {
+        isVerified: true,
+        verifiedAt: new Date(),
+        role: 'Visitor',
+        roleId: defaultRole._id,
+        updatedAt: new Date(),
+        isDeactivated: false
+      }
+    };
+
+    const user = await Model.findByIdAndUpdate(userId, updateData, { new: true });
+    if (!user) {
+      throw new AppError('user-not-found', 'User not found', 404);
+    }
+
+    logger.info('completeEmailVerification(): User verification completed', { userId });
+    return user;
+  } catch (error) {
+    logger.error('completeEmailVerification(): Failed to complete verification', error);
+    throw error instanceof AppError ? error : new AppError('verification-failed', error.message, 400);
+  }
+};
+
 module.exports = {
   create,
   search,
@@ -315,4 +351,5 @@ module.exports = {
   findByVerificationToken,
   refreshVerificationToken,
   updateUserRole,
+  completeEmailVerification,
 };

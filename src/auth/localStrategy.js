@@ -8,6 +8,7 @@ const {
   updateById,
   findByVerificationToken,
   refreshVerificationToken,
+  completeEmailVerification,
 } = require('../domains/user/service');
 const { AppError } = require('../libraries/error-handling/AppError');
 const { sendVerificationEmail } = require('../libraries/email/emailService');
@@ -84,6 +85,9 @@ const registerUser = async ({ email, password }) => {
       isAdmin: false,
       verificationToken,
       verificationTokenExpiry,
+      isDeactivated: false, // we activate the user after email verification
+      role: 'Visitor',
+      roleId: null,
     };
 
     // Create the user
@@ -119,12 +123,7 @@ const verifyEmail = async (token) => {
     }
 
     // Update user as verified
-    await updateById(user._id, {
-      isVerified: true,
-      verificationToken: null,
-      verificationTokenExpiry: null,
-      updatedAt: new Date()
-    });
+    await completeEmailVerification(user._id);
 
     return { message: 'Email verified successfully' };
   } catch (error) {

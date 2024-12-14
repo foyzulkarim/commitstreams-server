@@ -62,7 +62,7 @@ const routes = () => {
   );
 
   router.get(
-    '/detail/:id',
+    '/:id/detail',
     logRequest({}),
     validateRequest({ schema: idSchema, isParam: true }),
     async (req, res, next) => {
@@ -107,8 +107,9 @@ const routes = () => {
     return result;
   };
 
-  router.delete(
-    '/remove/:id',
+  // deactivateUser
+  router.put(
+    '/:id/deactivate',
     logRequest({}),
     isAuthorized,
     validateRequest({ schema: idSchema, isParam: true }),
@@ -131,8 +132,8 @@ const routes = () => {
   );
 
   // activateUser
-  router.post(
-    '/activate/:id',
+  router.put(
+    '/:id/activate',
     logRequest({}),
     isAuthorized,
     validateRequest({ schema: idSchema, isParam: true }),
@@ -150,7 +151,7 @@ const routes = () => {
 
   // update user's role only
   router.put(
-    '/update-role/:id',
+    '/:id/update-role',
     logRequest({}),
     isAuthorized,
     validateRequest({ schema: updateUserRoleSchema, isParam: false }),

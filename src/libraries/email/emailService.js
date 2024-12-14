@@ -9,7 +9,6 @@ sgMail.setApiKey(config.SENDGRID_API_KEY);
 
 // Debug mode configuration
 const isDebugMode = process.env.EMAIL_DEBUG === 'true';
-console.log('isDebugMode', isDebugMode, 'process.env.NODE_ENV', process.env.NODE_ENV, 'process.env.EMAIL_DEBUG', process.env.EMAIL_DEBUG);
 const debugDir = path.join(__dirname, 'debug');
 
 // Ensure debug directory exists
