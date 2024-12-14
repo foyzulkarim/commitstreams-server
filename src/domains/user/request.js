@@ -29,4 +29,8 @@ const searchSchema = Joi.object({
   order: Joi.string().valid('asc', 'desc'),
 });
 
-module.exports = { createSchema, updateSchema, idSchema, searchSchema };
+const updateUserRoleSchema = Joi.object().keys({
+  roleId: Joi.string().required(),
+});
+
+module.exports = { createSchema, updateSchema, idSchema, searchSchema, updateUserRoleSchema };

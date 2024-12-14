@@ -5,6 +5,7 @@ const schema = Joi.object({
     .valid('development', 'production', 'test')
     .default('development'),
   MONGODB_URI: Joi.string().required(),
+  DB_NAME: Joi.string().required(),
   RATE: Joi.number().min(0).required(),
   PORT: Joi.number().min(1000).default(4000),
   // LOGGLY is required when NODE_ENV is production
@@ -30,6 +31,11 @@ const schema = Joi.object({
   SESSION_SECRET: Joi.string().required(),
   ENCRYPTION_KEY: Joi.string().required(),
   ADMIN_USERNAMES: Joi.array().items(Joi.string()).required(),
+  SUPERADMIN_EMAIL: Joi.string().email().required(),
+  SUPERADMIN_PASSWORD: Joi.string().min(8).required(),
+  // SendGrid Configuration
+  SENDGRID_API_KEY: Joi.string().required(),
+  SENDGRID_FROM_EMAIL: Joi.string().email().required(),
 });
 
 module.exports = schema;

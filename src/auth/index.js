@@ -5,7 +5,7 @@ const {
   getGitHubStrategy,
   getOrCreateUserFromGitHubProfile,
 } = require('./githubStrategy');
-const { localStrategy, registerUser } = require('./localStrategy');
+const { localStrategy, registerUser, verifyEmail, resendVerificationEmail } = require('./localStrategy');
 const {
   getGoogleStrategy,
   getOrCreateUserFromGoogleProfile,
@@ -29,4 +29,6 @@ module.exports = {
   registerUser,
   getGoogleStrategy,
   getOrCreateUserFromGoogleProfile,
+  verifyEmail,
+  resendVerificationEmail,
 };

@@ -2,19 +2,14 @@ const mongoose = require('mongoose');
 const { baseSchema } = require('../../libraries/db/base-schema');
 
 const permissionSchema = new mongoose.Schema({
-  resource: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Resource',
-    required: true,
+  api: {
+    type: Array,
+    required: true
   },
-  canAccess: {
-    type: Boolean,
-    default: false,
-  },
-  isDisabled: {
-    type: Boolean,
-    default: false,
-  },
+  client: {
+    type: Array, 
+    required: false
+  }
 });
 
 const roleSchema = new mongoose.Schema({
@@ -22,22 +17,20 @@ const roleSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true,
-    lowercase: true,
     trim: true,
   },
-  displayName: {
+  identifier: {
     type: String,
     required: true,
+    unique: true,
+    trim: true,
+    lowercase: true,
   },
-  description: {
-    type: String,
-    default: '',
-  },
-  permissions: [permissionSchema],
-  isSystem: {
+  isSystemManaged: {
     type: Boolean,
-    default: false,
+    default: true,
   },
+  permissions: permissionSchema,
 });
 
 roleSchema.add(baseSchema);

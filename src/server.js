@@ -3,7 +3,6 @@ const express = require('express');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
-const bcrypt = require('bcrypt');
 
 const passport = require('passport');
 const session = require('express-session');
@@ -20,9 +19,28 @@ const {
   localStrategy,
   registerUser,
   getGoogleStrategy,
+  verifyEmail,
+  resendVerificationEmail,
 } = require('./auth');
 
+const { AppError } = require('./libraries/error-handling/AppError');
+
+const { getClientPermissionsByRoleIdentifierSync } = require('./domains/role/service');
+
 let connection;
+
+// Helper function to create consistent trimmed user object
+const createTrimmedUser = (user) => ({
+  _id: user._id,
+  email: user.email,
+  authType: user.authType,
+  displayName: user.displayName,
+  isAdmin: user.isAdmin,
+  isDeactivated: user.isDeactivated,
+  isDemo: user.isDemo,
+  role: user.role,
+  permissions: user.permissions,
+});
 
 const handleAuthCallback = (strategy) => {
   return [
@@ -39,14 +57,16 @@ const handleAuthCallback = (strategy) => {
               `${config.CLIENT_HOST}/login?error=${err?.name}`
             );
           }
-          req.logIn(user, function (err) {
+
+          const trimmedUser = createTrimmedUser(user);
+          req.logIn(trimmedUser, function (err) {
             if (err) {
               return res.redirect(
                 `${config.CLIENT_HOST}/login?error=failed-to-authenticate`
               );
             }
-
-            req.session.userId = user._id;
+            logger.info('saving session for user', { user: trimmedUser });
+            req.session.userId = trimmedUser._id.toString();
             req.session.sessionId = req.sessionID;
             req.session.save((err) => {
               if (err) {
@@ -109,12 +129,14 @@ const createExpressApp = () => {
   expressApp.use(passport.initialize());
   expressApp.use(passport.session());
 
-  passport.serializeUser(function (user, done) {
-    done(null, user);
+  // Update serialization
+  passport.serializeUser(async function (user, done) {
+    const trimmedUser = createTrimmedUser(user);
+    done(null, trimmedUser);
   });
 
-  passport.deserializeUser(function (user, done) {
-    done(null, user);
+  passport.deserializeUser(function (trimmedUser, done) {
+    done(null, trimmedUser);
   });
 
   expressApp.use((req, res, next) => {
@@ -140,8 +162,9 @@ const createExpressApp = () => {
     if (!req.user) {
       return res.status(401).send('Unauthorized');
     }
-    const { accessToken, accessTokenIV, ...user } = req.user;
-    res.json(user);
+
+    const userResponse = createTrimmedUser(req.user);
+    res.json(userResponse);
   });
 
   expressApp.post('/api/register', async (req, res, next) => {
@@ -150,14 +173,59 @@ const createExpressApp = () => {
       const newUser = await registerUser({ email, password });
       res
         .status(201)
-        .json({ message: 'User registered successfully', userId: newUser._id });
+        .json({ message: 'Registration successful. Please check your email to verify your account.', userId: newUser._id });
     } catch (err) {
       next(err);
     }
   });
 
-  expressApp.post('/api/login', (req, res, next) => {
-    passport.authenticate('local', (err, user, info) => {
+  // Debug email routes - only available in development
+  if (process.env.NODE_ENV === 'development') {
+    const { listDebugEmails, readDebugEmail, isDebugMode } = require('./libraries/email/emailService');
+
+    expressApp.get('/api/debug/emails', async (req, res) => {
+      if (!isDebugMode) {
+        return res.status(400).json({ message: 'Email debug mode is not enabled' });
+      }
+      const emails = await listDebugEmails();
+      res.json(emails);
+    });
+
+    expressApp.get('/api/debug/emails/:filename', async (req, res) => {
+      if (!isDebugMode) {
+        return res.status(400).json({ message: 'Email debug mode is not enabled' });
+      }
+      try {
+        const content = await readDebugEmail(req.params.filename);
+        res.send(content);
+      } catch (error) {
+        res.status(404).json({ message: 'Email not found' });
+      }
+    });
+  }
+
+  expressApp.get('/api/verify-email', async (req, res, next) => {
+    try {
+      const { token } = req.query;
+      if (!token) {
+        return res.status(400).json({ message: 'Verification token is required' });
+      }
+
+      const result = await verifyEmail(token);
+      res.json(result);
+    } catch (err) {
+      if (err instanceof AppError) {
+        return res.status(err.statusCode || 400).json({
+          message: err.message,
+          code: err.name
+        });
+      }
+      next(err);
+    }
+  });
+
+  expressApp.post('/api/login', async (req, res, next) => {
+    passport.authenticate('local', async (err, user, info) => {
       logger.info('Login attempt', { err, user, info });
       if (err) {
         return next(err);
@@ -165,28 +233,41 @@ const createExpressApp = () => {
       if (!user) {
         return res
           .status(401)
-          .json({ message: info.message || 'Authentication failed' });
+          .json({ message: info.message || 'Authentication failed', reason: info.reason });
       }
+
+      user.permissions = {
+        client: await getClientPermissionsByRoleIdentifierSync(user.role),
+      };
 
       req.logIn(user, (err) => {
         if (err) {
           return next(err);
         }
 
-        // Create a sanitized user object for the client
-        const trimmedPayloadForSession = {
-          _id: user._id,
-          email: user.email,
-          authType: user.authType,
-          displayName: user.displayName,
-          isAdmin: user.isAdmin,
-          isDeactivated: user.isDeactivated,
-          isDemo: user.isDemo,
-        };
+        const trimmedUser = createTrimmedUser(user);
+        // Save session data
+        req.session.userId = trimmedUser._id.toString();
+        req.session.sessionId = req.sessionID;
 
-        return res.json({
-          message: 'Login successful',
-          user: trimmedPayloadForSession,
+        logger.info('saving session for user', { user: trimmedUser });
+
+        // Explicitly save the session
+        req.session.save((err) => {
+          if (err) {
+            logger.error('Failed to save session', err);
+            return next(err);
+          }
+
+          logger.info('Session saved successfully', {
+            sessionId: req.sessionID,
+            userId: trimmedUser._id
+          });
+
+          return res.json({
+            message: 'Login successful',
+            user: trimmedUser,
+          });
         });
       });
     })(req, res, next);
@@ -195,7 +276,8 @@ const createExpressApp = () => {
   expressApp.get('/api/logout', async (req, res, next) => {
     const username = req.user?.username;
     const userId = req.user?._id;
-
+    console.log('req.session', req.session);
+    console.log('req.session.userId', req.session.userId);
     req.logout(async function (err) {
       // Passport.js logout function
       if (err) {
@@ -231,6 +313,27 @@ const createExpressApp = () => {
     '/api/auth/google',
     passport.authenticate('google', { scope: ['profile', 'email'] })
   );
+
+  expressApp.post('/api/resend-verification', async (req, res, next) => {
+    try {
+      const { email } = req.body;
+      logger.info('resend-verification', { email });
+      if (!email) {
+        return res.status(400).json({ message: 'Email is required' });
+      }
+
+      const result = await resendVerificationEmail(email);
+      res.json(result);
+    } catch (err) {
+      if (err instanceof AppError) {
+        return res.status(err.statusCode || 400).json({
+          message: err.message,
+          code: err.name
+        });
+      }
+      next(err);
+    }
+  });
 
   defineRoutes(expressApp);
   defineErrorHandlingMiddleware(expressApp);

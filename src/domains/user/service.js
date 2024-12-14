@@ -1,7 +1,8 @@
 const logger = require('../../libraries/log/logger');
-
 const Model = require('./schema');
+const Role = require('../role/schema');
 const { AppError } = require('../../libraries/error-handling/AppError');
+const crypto = require('crypto');
 
 const model = 'user';
 const projection = { accessToken: 0, accessTokenIV: 0 };
@@ -134,6 +135,21 @@ const activateUser = async (id) => {
   }
 };
 
+const updateUserRole = async (id, payload) => {
+  try {
+    const item = await Model.findById(id);
+    const role = await Role.findById(payload.roleId);
+    item.role = role.name;
+    item.roleId = role._id;
+    await item.save();
+    logger.info(`updateUserRole(): ${model} updated`, { id, role: item.role });
+    return item;
+  } catch (error) {
+    logger.error(`updateUserRole(): Failed to update ${model}`, error);
+    throw new AppError(`Failed to update ${model}`, error.message);
+  }
+}
+
 const getByGitHubId = async (githubId) => {
   return await Model.findOne({ 'github.id': githubId });
 };
@@ -203,6 +219,121 @@ const followUser = async (followerId, followedId) => {
   }
 };
 
+const findByVerificationToken = async (token) => {
+  try {
+    return await Model.findOne({
+      verificationToken: token,
+      verificationTokenExpiry: { $gt: new Date() },
+      isVerified: false
+    });
+  } catch (error) {
+    logger.error('findByVerificationToken(): Failed to find user by token', error);
+    throw new AppError('Failed to find user by token', error.message, 400);
+  }
+};
+
+const generateVerificationToken = () => {
+  return crypto.randomBytes(32).toString('hex');
+};
+
+const canResendVerification = async (userId) => {
+  const user = await Model.findById(userId);
+  if (!user) {
+    throw new AppError('user-not-found', 'User not found', 404);
+  }
+
+  // If user is already verified
+  if (user.isVerified) {
+    throw new AppError('already-verified', 'Email is already verified', 400);
+  }
+
+  // Check if last verification email was sent less than 1 minute ago
+  if (user.verificationEmailSentAt) {
+    const timeSinceLastEmail = new Date() - user.verificationEmailSentAt;
+    const oneMinuteInMs = 60000; // 1 minute in milliseconds
+    
+    if (timeSinceLastEmail < oneMinuteInMs) {
+      const remainingSeconds = Math.ceil((oneMinuteInMs - timeSinceLastEmail) / 1000);
+      throw new AppError(
+        'rate-limit', 
+        `Please wait ${remainingSeconds} seconds before requesting another verification email`,
+        429
+      );
+    }
+  }
+
+  return true;
+};
+
+const refreshVerificationToken = async (email) => {
+  try {
+    const user = await Model.findOne({ email, authType: 'local' });
+    
+    if (!user) {
+      throw new AppError('user-not-found', 'No account found with this email', 404);
+    }
+
+    await canResendVerification(user._id);
+
+    // Generate new verification token
+    const verificationToken = generateVerificationToken();
+    const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const verificationEmailSentAt = new Date();
+
+    // Update user with new token and email sent timestamp
+    await updateById(user._id, {
+      verificationToken,
+      verificationTokenExpiry,
+      verificationEmailSentAt,
+      updatedAt: new Date()
+    });
+
+    return { user, verificationToken };
+  } catch (error) {
+    if (error instanceof AppError) {
+      throw error;
+    }
+    logger.error('refreshVerificationToken(): Failed to refresh token', error);
+    throw new AppError('refresh-token-failed', error.message, 400);
+  }
+};
+
+const completeEmailVerification = async (userId) => {
+  try {
+    const defaultRole = await Role.findOne({ name: 'Visitor' });
+    if (!defaultRole) {
+      throw new AppError('role-not-found', 'Default user role not found', 500);
+    }
+
+    const updateData = {
+      $unset: {
+        verificationToken: 1,
+        verificationTokenExpiry: 1,
+        isDemo: 1
+      },
+      $set: {
+        isVerified: true,
+        verifiedAt: new Date(),
+        role: 'Visitor',
+        roleId: defaultRole._id,
+        updatedAt: new Date(),
+        isDeactivated: false
+      }
+    };
+
+    const user = await Model.findByIdAndUpdate(userId, updateData, { new: true });
+    if (!user) {
+      throw new AppError('user-not-found', 'User not found', 404);
+    }
+
+    logger.info('completeEmailVerification(): User verification completed', { userId });
+    return user;
+  } catch (error) {
+    logger.error('completeEmailVerification(): Failed to complete verification', error);
+    throw error instanceof AppError ? error : new AppError('verification-failed', error.message, 400);
+  }
+};
+
 module.exports = {
   create,
   search,
@@ -217,4 +348,8 @@ module.exports = {
   activateUser,
   getByEmail,
   getByGoogleId,
+  findByVerificationToken,
+  refreshVerificationToken,
+  updateUserRole,
+  completeEmailVerification,
 };

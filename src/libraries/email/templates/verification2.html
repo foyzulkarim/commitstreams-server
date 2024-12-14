@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Verify your email address</title>
+  <style>
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background-color: #f4f4f4;
+      color: #333333;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #ffffff;
+    }
+    h1 {
+      color: #007bff;
+    }
+    .button {
+      display: inline-block;
+      padding: 10px 20px;
+      background-color: #007bff;
+      color: #ffffff;
+      text-decoration: none;
+      border-radius: 4px;
+    }
+    .footer {
+      margin-top: 20px;
+      text-align: center;
+      color: #666666;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Welcome to {{appName}}!</h1>
+    <p>Hi there,</p>
+    <p>Thanks for signing up with {{appName}}. To complete your registration, we just need you to verify your email address:</p>
+    <p><a href="{{verificationLink}}" class="button">Verify Email Address</a></p>
+    <p>If the button above doesn't work, copy and paste this link into your browser:</p>
+    <p><a href="{{verificationLink}}">{{verificationLink}}</a></p>
+    <p>This link will expire in {{expiryHours}} hours, so please verify soon.</p>
+    <p>If you did not sign up for an account with {{appName}}, you can safely ignore this email.</p>
+    <p>Thanks,<br>The {{appName}} Team</p>
+    <div class="footer">
+      This email was sent to {{userEmail}}. If you'd rather not receive this kind of email, you can <a href="#">unsubscribe</a>.
+    </div>
+  </div>
+</body>
+</html> 

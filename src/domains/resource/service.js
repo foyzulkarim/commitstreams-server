@@ -43,9 +43,7 @@ const search = async (query) => {
     }
 
     const items = await Model.find(filter)
-      .sort({ [orderBy]: order === 'asc' ? 1 : -1 })
-      .skip(page * pageSize)
-      .limit(pageSize);
+      .sort({ [orderBy]: order === 'asc' ? 1 : -1 });
 
     logger.info('search(): filter and count', {
       filter,

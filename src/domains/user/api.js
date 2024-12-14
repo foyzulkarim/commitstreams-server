@@ -12,6 +12,7 @@ const {
   followUser,
   deactivateUser,
   activateUser,
+  updateUserRole,
 } = require('./service');
 
 const {
@@ -19,6 +20,7 @@ const {
   updateSchema,
   idSchema,
   searchSchema,
+  updateUserRoleSchema,
 } = require('./request');
 const { validateRequest } = require('../../middlewares/request-validate');
 const { logRequest } = require('../../middlewares/log');
@@ -60,30 +62,7 @@ const routes = () => {
   );
 
   router.get(
-    '/:id/follow',
-    logRequest({}),
-    validateRequest({ schema: idSchema, isParam: true }),
-    async (req, res, next) => {
-      const currentUserId = req.user._id;
-      try {
-        if (currentUserId === req.params.id) {
-          throw new AppError(
-            'Cannot follow yourself',
-            'Cannot follow yourself',
-            400
-          );
-        }
-
-        const result = await followUser(currentUserId, req.params.id);
-        res.status(200).json({ result });
-      } catch (error) {
-        next(error);
-      }
-    }
-  );
-
-  router.get(
-    '/:id',
+    '/:id/detail',
     logRequest({}),
     validateRequest({ schema: idSchema, isParam: true }),
     async (req, res, next) => {
@@ -128,8 +107,9 @@ const routes = () => {
     return result;
   };
 
-  router.delete(
-    '/:id',
+  // deactivateUser
+  router.put(
+    '/:id/deactivate',
     logRequest({}),
     isAuthorized,
     validateRequest({ schema: idSchema, isParam: true }),
@@ -152,7 +132,7 @@ const routes = () => {
   );
 
   // activateUser
-  router.post(
+  router.put(
     '/:id/activate',
     logRequest({}),
     isAuthorized,
@@ -163,6 +143,22 @@ const routes = () => {
         res
           .status(200)
           .json({ message: `${activatedUser.username} has been activated` });
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
+  // update user's role only
+  router.put(
+    '/:id/update-role',
+    logRequest({}),
+    isAuthorized,
+    validateRequest({ schema: updateUserRoleSchema, isParam: false }),
+    async (req, res, next) => {
+      try {
+        const updatedUser = await updateUserRole(req.params.id, req.body);
+        res.status(200).json(updatedUser);
       } catch (error) {
         next(error);
       }

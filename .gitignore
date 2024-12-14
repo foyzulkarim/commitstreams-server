@@ -130,3 +130,7 @@ dist
 config.development.json
 config.production.json
 config.test.json
+
+# Debug emails
+**/debug/**
+.DS_Store

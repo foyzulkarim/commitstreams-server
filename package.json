@@ -17,13 +17,15 @@
     "logs:prod": "pm2 logs src/start.js",
     "restart:prod": "NODE_ENV=production pm2 restart src/start.js",
     "create-domain": "zx scripts/dev/domain-generator.js",
-    "bump-version": "npm version patch -m 'Bump version to %s'"
+    "bump-version": "npm version patch -m 'Bump version to %s'",
+    "migrate": "node src/migration-runner.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@octokit/rest": "^20.1.1",
+    "@sendgrid/mail": "^8.1.4",
     "bcrypt": "^5.1.1",
     "compression": "^1.7.4",
     "connect-mongo": "^5.1.0",
